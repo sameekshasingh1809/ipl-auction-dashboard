@@ -2,10 +2,6 @@
 
 An interactive dashboard analyzing 10 years of IPL player auctions (2013–2022) — built to answer a simple question: **how do franchises actually spend, and where does the money go?**
 
-**[Live demo →](#)** *(add your GitHub Pages link here once it's live)*
-
-![Dashboard preview](#) *(optional: add a screenshot once it's pushed)*
-
 ---
 
 ## What it does
