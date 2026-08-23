@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IPL Auction & Team Performance Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1526; --panel:#151F36; --panel2:#1B2740; --line:#2A3450;
+    --gold:#D4A72C; --gold-dim:#8A6E1E; --teal:#2BA88F; --coral:#E2574C;
+    --cream:#F3EFE4; --muted:#93A0BE; --muted2:#5E6C8C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--cream);font-family:'Inter',sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 60px;}
+
+  .hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:26px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;}
+  .lot-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--gold);background:rgba(212,167,44,.1);border:1px solid rgba(212,167,44,.35);padding:3px 8px;border-radius:3px;margin-bottom:10px;}
+  h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:38px;line-height:1.05;margin:0 0 6px;letter-spacing:.01em;text-transform:uppercase;}
+  .sub{color:var(--muted);font-size:14px;max-width:520px;}
+  .scope{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted2);text-align:right;}
+  .scope b{color:var(--gold);font-weight:600;}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px;position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--gold);opacity:.7;}
+  .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
+  .kpi-val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--cream);}
+  .kpi-val small{font-size:13px;color:var(--muted);font-weight:500;}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;align-items:center;}
+  .filters label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:6px;}
+  select{background:var(--panel2);color:var(--cream);border:1px solid var(--line);border-radius:4px;padding:7px 10px;font-family:'Inter',sans-serif;font-size:13px;}
+  select:focus{outline:1px solid var(--gold);}
+  .reset-btn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .reset-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+  .section-head{display:flex;align-items:baseline;gap:10px;margin:34px 0 14px;}
+  .section-num{font-family:'IBM Plex Mono',monospace;color:var(--gold-dim);font-size:12px;}
+  h2{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:20px;text-transform:uppercase;letter-spacing:.04em;margin:0;color:var(--cream);}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;}
+
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+  @media (max-width:820px){.grid2{grid-template-columns:1fr;} .kpis{grid-template-columns:repeat(2,1fr);}}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:12px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .sw{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line);}
+  td{padding:9px 10px;border-bottom:1px solid rgba(42,52,80,.5);color:var(--cream);}
+  tr:hover td{background:rgba(212,167,44,.05);}
+  .amt{font-family:'IBM Plex Mono',monospace;color:var(--gold);text-align:right;}
+  .pill{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--muted);}
+
+  .empty{color:var(--muted2);font-size:13px;padding:20px;text-align:center;}
+  ::-webkit-scrollbar{height:6px;width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+
+  .tab-row{display:flex;gap:8px;margin-bottom:14px;}
+  .tab-btn{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .tab-btn:hover{color:var(--cream);}
+  .tab-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(212,167,44,.08);}
+
+  .search-row{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .search-row input[type=text]{background:var(--panel2);color:var(--cream);border:1px solid var(--line);border-radius:4px;padding:8px 12px;font-family:'Inter',sans-serif;font-size:13px;min-width:280px;}
+  .search-row input[type=text]:focus{outline:1px solid var(--gold);}
+  .search-hint{font-size:11px;color:var(--muted2);}
+
+  .insight{font-size:12px;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+  .insight b{color:var(--gold);font-weight:600;}
+  .player-name{font-weight:600;color:var(--cream);}
+  .move-team{font-size:11px;color:var(--muted2);}
+  .change-up{color:var(--teal);font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .change-down{color:var(--coral);font-family:'IBM Plex Mono',monospace;font-weight:600;}
+
+  .dna-selects{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .dna-selects label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:6px;}
+
+  .bump-scroll{overflow-x:auto;}
+  .rank-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'IBM Plex Mono',monospace;}
+  .rank-table th{padding:6px 8px;color:var(--muted);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);white-space:nowrap;}
+  .rank-table td{padding:0;}
+  .rank-team{font-family:'Inter',sans-serif;font-size:12px;color:var(--cream);padding:8px 12px !important;white-space:nowrap;border-right:1px solid var(--line);}
+  .rank-cell{text-align:center;padding:8px 4px !important;color:var(--cream);border-bottom:1px solid rgba(42,52,80,.4);min-width:44px;}
+  .rank-empty{color:var(--muted2);background:transparent;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <div class="lot-tag">IPL AUCTION LEDGER · 2013–2022</div>
+      <h1>Team spending &amp; roster budget dashboard</h1>
+      <div class="sub">Interactive breakdown of IPL player-auction spend across 15 franchises, 969 buys and 10 seasons — filter by season, franchise and role.</div>
+    </div>
+    <div class="scope">969 records<br><b id="scopeCount">969</b> in current filter</div>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="filters">
+    <div><label for="fYear">Season</label><select id="fYear"><option value="">All</option></select></div>
+    <div><label for="fTeam">Team</label><select id="fTeam"><option value="">All</option></select></div>
+    <div><label for="fRole">Role</label><select id="fRole"><option value="">All</option></select></div>
+    <button class="reset-btn" id="resetBtn"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-2px;"></i> Reset filters</button>
+  </div>
+
+  <div class="section-head"><span class="section-num">01</span><h2>Franchise spend</h2></div>
+  <div class="panel">
+    <div style="position:relative;height:340px;">
+      <canvas id="teamChart" role="img" aria-label="Bar chart of total auction spend per franchise"></canvas>
+    </div>
+  </div>
+
+  <div class="section-head"><span class="section-num">02</span><h2>Role budget allocation &amp; spend trend</h2></div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="legend" id="roleLegend"></div>
+      <div style="position:relative;height:300px;">
+        <canvas id="roleChart" role="img" aria-label="Stacked bar chart of role spend share per team"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="position:relative;height:300px;">
+        <canvas id="yearChart" role="img" aria-label="Line chart of league-wide average auction price per season"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head"><span class="section-num">03</span><h2>Marquee buys</h2></div>
+  <div class="panel" style="overflow-x:auto;">
+    <table id="topBuysTable">
+      <thead><tr><th>Player</th><th>Team</th><th>Season</th><th>Role</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section-head"><span class="section-num">04</span><h2>Player auction history</h2></div>
+  <div class="panel">
+    <div class="search-row">
+      <input list="playerList" id="playerSearch" type="text" placeholder="Search a player, e.g. Christopher Morris...">
+      <datalist id="playerList"></datalist>
+      <span class="search-hint" id="searchHint"></span>
+    </div>
+    <div id="playerResult">
+      <div class="empty">Type a player name to see their auction price trajectory across seasons and franchises — a price crash usually tracks a lean season, a spike usually tracks a breakout. Note: this only covers players who actually went under the hammer — franchise retentions (e.g. MS Dhoni or Ravindra Jadeja at CSK, kept year after year without going to auction) aren't in the source data.</div>
+    </div>
+  </div>
+
+  <div class="section-head"><span class="section-num">05</span><h2>Biggest movers</h2></div>
+  <div class="panel" style="overflow-x:auto;">
+    <div class="tab-row">
+      <button class="tab-btn active" id="moversJumpsBtn">Biggest jumps</button>
+      <button class="tab-btn" id="moversDropsBtn">Biggest drops</button>
+    </div>
+    <table id="moversTable">
+      <thead><tr><th>Player</th><th>Move</th><th style="text-align:right;">Change</th><th style="text-align:right;">Price</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section-head"><span class="section-num">06</span><h2>Team spending DNA</h2></div>
+  <div class="panel">
+    <div class="dna-selects">
+      <div><label for="dnaTeamA">Team A</label><select id="dnaTeamA"></select></div>
+      <div><label for="dnaTeamB">Team B</label><select id="dnaTeamB"></select></div>
+    </div>
+    <div class="legend" id="dnaLegend"></div>
+    <div style="position:relative;height:360px;">
+      <canvas id="dnaChart" role="img" aria-label="Radar chart comparing role budget allocation between two franchises"></canvas>
+    </div>
+  </div>
+
+  <div class="section-head"><span class="section-num">07</span><h2>Spend-rank movement by season</h2></div>
+  <div class="panel bump-scroll">
+    <div class="sub" style="max-width:none;margin-bottom:14px;">Each cell is a franchise's spend rank that season — <b style="color:var(--gold)">1</b> means biggest spender that year. Darker gold = higher rank, lighter = lower. A dash means the franchise didn't buy that season (didn't exist yet, or the year it took a break). Rows are sorted by career spend, same order as the Franchise spend chart up top. Delhi Daredevils/Kings XI Punjab are merged into their current names (Capitals/Kings) since they're the same franchise, just rebranded.</div>
+    <div id="bumpGrid"></div>
+  </div>
+
+  <div class="section-head"><span class="section-num">08</span><h2>Indian vs. overseas price inflation</h2></div>
+  <div class="panel">
+    <div class="legend" id="originLegend"></div>
+    <div style="position:relative;height:300px;">
+      <canvas id="originChart" role="img" aria-label="Line chart comparing average auction price for Indian vs overseas players by season"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const AUCTION_DATA = [["Aaron Finch", "Batsman", 40000000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Aaron Finch", "Batsman", 32000000, "Mumbai Indians", 2015, "Overseas"], ["Aaron Finch", "Batsman", 10000000, "Gujarat Lions", 2016, "Overseas"], ["Aaron Finch", "Batsman", 62000000, "Kings XI Punjab", 2018, "Overseas"], ["Aaron Finch", "Batsman", 44000000, "Royal Challengers Bangalore", 2020, "Overseas"], ["Abdul Samad", "All-Rounder", 2000000, "Sunrisers Hyderabad", 2020, "Indian"], ["Abhijeet Tomar", "Batsman", 4000000, "Kolkata Knight Riders", 2022, "Indian"], ["Abhimanyu Mithun", "Bowler", 3000000, "Mumbai Indians", 2015, "Indian"], ["Abhimanyu Mithun", "Bowler", 3000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Abhinav Sadarangani", "Batsman", 26000000, "Gujarat Titans", 2022, "Indian"], ["Abhishek Nayar", "All-Rounder", 50625000, "Pune Warriors India", 2013, "Indian"], ["Abhishek Nayar", "All-Rounder", 10000000, "Rajasthan Royals", 2014, "Indian"], ["Abhishek Sharma", "All-Rounder", 5500000, "Delhi Daredevils", 2018, "Indian"], ["Abhishek Sharma", "All-Rounder", 65000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Abu Nechim Ahmed", "Bowler", 3000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Adam Milne", "Bowler", 7000000, "Royal Challengers Bangalore", 2015, "Overseas"], ["Adam Milne", "Bowler", 32000000, "Mumbai Indians", 2021, "Overseas"], ["Adam Milne", "Bowler", 19000000, "Chennai Super Kings", 2022, "Overseas"], ["Adam Zampa", "Bowler", 3000000, "Rising Pune Supergiant", 2016, "Overseas"], ["Aditya Garhwal", "All-Rounder", 2500000, "Kolkata Knight Riders", 2015, "Indian"], ["Aditya Tare", "Wicket Keeper", 16000000, "Mumbai Indians", 2014, "Indian"], ["Aditya Tare", "Wicket Keeper", 12000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Aditya Tare", "Wicket Keeper", 2500000, "Delhi Daredevils", 2017, "Indian"], ["Aditya Tare", "Wicket Keeper", 2000000, "Mumbai Indians", 2018, "Indian"], ["Agnivesh Ayachi", "All-Rounder", 2000000, "Kings XI Punjab", 2019, "Indian"], ["Aiden Blizzard", "Batsman", 3000000, "Mumbai Indians", 2015, "Overseas"], ["Aiden Markram", "Batsman", 26000000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Ajantha Mendis", "Bowler", 54375000, "Pune Warriors India", 2013, "Overseas"], ["Ajinkya Rahane", "Batsman", 40000000, "Rajasthan Royals", 2018, "Indian"], ["Ajinkya Rahane", "Batsman", 10000000, "Kolkata Knight Riders", 2022, "Indian"], ["Akash Deep", "Bowler", 2000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Akash Singh", "Bowler", 2000000, "Rajasthan Royals", 2020, "Indian"], ["Akash Singh", "Bowler", 2000000, "Rajasthan Royals", 2021, "Indian"], ["Akhil Arvind Herwadkar", "All-Rounder", 1000000, "Delhi Daredevils", 2016, "Indian"], ["Akila Dananjaya", "All-Rounder", 1500000, "Chennai Super Kings", 2013, "Overseas"], ["Akila Dhananjaya", "Bowler", 5000000, "Mumbai Indians", 2018, "Overseas"], ["Akshar Rajesh Patel", "All-Rounder", 7500000, "Kings XI Punjab", 2014, "Indian"], ["Akshay Karnewar", "All-Rounder", 1000000, "Royal Challengers Bangalore", 2016, "Indian"], ["Akshay Wakhare", "Bowler", 1000000, "Mumbai Indians", 2015, "Indian"], ["Akshdeep Nath", "All-Rounder", 1000000, "Gujarat Lions", 2016, "Indian"], ["Akshdeep Nath", "All-Rounder", 1000000, "Gujarat Lions", 2017, "Indian"], ["Akshdeep Nath", "All-Rounder", 10000000, "Kings XI Punjab", 2018, "Indian"], ["Akshdeep Nath", "All-Rounder", 36000000, "Royal Challengers Bangalore", 2019, "Indian"], ["Albie Morkel", "All-Rounder", 24000000, "Royal Challengers Bangalore", 2014, "Overseas"], ["Albie Morkel", "All-Rounder", 3000000, "Delhi Daredevils", 2015, "Overseas"], ["Alex Carey", "Wicket Keeper", 24000000, "Delhi Capitals", 2020, "Overseas"], ["Alex Hales", "Batsman", 15000000, "Kolkata Knight Riders", 2022, "Overseas"], ["Alzarri Joseph", "Bowler", 24000000, "Gujarat Titans", 2022, "Overseas"], ["Aman Khan", "All-Rounder", 2000000, "Kolkata Knight Riders", 2022, "Indian"], ["Ambati Rayudu", "Wicket Keeper", 22000000, "Chennai Super Kings", 2018, "Indian"], ["Ambati Rayudu", "Wicket Keeper", 67500000, "Chennai Super Kings", 2022, "Indian"], ["Amit Mishra", "Bowler", 1000000, "Rajasthan Royals", 2014, "Indian"], ["Amit Mishra", "Bowler", 47500000, "Sunrisers Hyderabad", 2014, "Indian"], ["Amit Mishra", "Bowler", 35000000, "Delhi Daredevils", 2015, "Indian"], ["Amit Mishra", "Bowler", 1000000, "Gujarat Lions", 2016, "Indian"], ["Amit Mishra", "Bowler", 40000000, "Delhi Daredevils", 2018, "Indian"], ["Amit Paunikar", "Wicket Keeper", 2000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Andre Russell", "All-Rounder", 6000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Andrew Tye", "Bowler", 2000000, "Chennai Super Kings", 2015, "Overseas"], ["Andrew Tye", "All-Rounder", 5000000, "Gujarat Lions", 2016, "Overseas"], ["Andrew Tye", "Bowler", 72000000, "Kings XI Punjab", 2018, "Overseas"], ["Andrew Tye", "Bowler", 10000000, "Rajasthan Royals", 2020, "Overseas"], ["Aneeshwar Gautam", "All-Rounder", 2000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Angelo Mathews", "All-Rounder", 75000000, "Delhi Daredevils", 2015, "Overseas"], ["Angelo Mathews", "All-Rounder", 20000000, "Delhi Daredevils", 2017, "Overseas"], ["Aniket Choudhary", "Bowler", 20000000, "Royal Challengers Bangalore", 2017, "Indian"], ["Aniket Choudhary", "Bowler", 3000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Anirudha Ashok Joshi", "All-Rounder", 2000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Anirudha Ashok Joshi", "All-Rounder", 2000000, "Rajasthan Royals", 2020, "Indian"], ["Ankeet Bawane", "Batsman", 1000000, "Delhi Daredevils", 2017, "Indian"], ["Ankit Nagendra Sharma", "Bowler", 1000000, "Rajasthan Royals", 2014, "Indian"], ["Ankit Sharma", "All-Rounder", 1000000, "Rising Pune Supergiant", 2016, "Indian"], ["Ankit Sharma", "All-Rounder", 2000000, "Rajasthan Royals", 2018, "Indian"], ["Ankit Singh Rajpoot", "Bowler", 15000000, "Kolkata Knight Riders", 2016, "Indian"], ["Ankit Singh Rajpoot", "Bowler", 30000000, "Kings XI Punjab", 2018, "Indian"], ["Ankit Singh Rajpoot", "Bowler", 5000000, "Lucknow Super Giants", 2022, "Indian"], ["Ankush Bains", "Wicket Keeper", 1000000, "Rajasthan Royals", 2014, "Indian"], ["Ankush Bains", "Wicket Keeper", 1000000, "Chennai Super Kings", 2015, "Indian"], ["Ankush Bains", "Wicket Keeper", 1000000, "Rising Pune Supergiant", 2016, "Indian"], ["Ankush Bains", "Wicket Keeper", 2000000, "Delhi Capitals", 2019, "Indian"], ["Anmolpreet Singh", "Batsman", 8000000, "Mumbai Indians", 2019, "Indian"], ["Anmolpreet Singh", "Batsman", 2000000, "Mumbai Indians", 2022, "Indian"], ["Anrich Nortje", "Bowler", 2000000, "Kolkata Knight Riders", 2019, "Overseas"], ["Ansh Patel", "All-Rounder", 2000000, "Punjab Kings", 2022, "Indian"], ["Anuj Rawat", "Wicket Keeper", 8000000, "Rajasthan Royals", 2020, "Indian"], ["Anuj Rawat", "Wicket Keeper", 34000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Anukul Roy", "All-Rounder", 2000000, "Mumbai Indians", 2018, "Indian"], ["Anukul Roy", "All-Rounder", 2000000, "Kolkata Knight Riders", 2022, "Indian"], ["Anunay Singh", "All-Rounder", 2000000, "Rajasthan Royals", 2022, "Indian"], ["Anureet Singh", "Bowler", 2000000, "Kings XI Punjab", 2014, "Indian"], ["Anureet Singh", "Bowler", 3000000, "Rajasthan Royals", 2018, "Indian"], ["Apoorv Vijay Wankhade", "Batsman", 1000000, "Mumbai Indians", 2014, "Indian"], ["Apoorv Vijay Wankhade", "Batsman", 2000000, "Kolkata Knight Riders", 2018, "Indian"], ["Arjun Tendulkar", "All-Rounder", 2000000, "Mumbai Indians", 2021, "Indian"], ["Arjun Tendulkar", "All-Rounder", 3000000, "Mumbai Indians", 2022, "Indian"], ["Armaan Jaffer", "Batsman", 1000000, "Kings XI Punjab", 2016, "Indian"], ["Arshdeep Singh", "Bowler", 2000000, "Kings XI Punjab", 2019, "Indian"], ["Aryaman Vikram Birla", "All-Rounder", 3000000, "Rajasthan Royals", 2018, "Indian"], ["Aryan Juyal", "Wicket Keeper", 2000000, "Mumbai Indians", 2022, "Indian"], ["Asela Gunarathna", "Batsman", 3000000, "Mumbai Indians", 2017, "Overseas"], ["Ashish Nehra", "Bowler", 20000000, "Chennai Super Kings", 2014, "Indian"], ["Ashish Nehra", "Bowler", 55000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Ashish Reddy", "Bowler", 2000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Ashok Dinda", "Bowler", 15000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Ashok Dinda", "Bowler", 5000000, "Rising Pune Supergiant", 2016, "Indian"], ["Ashok Sharma", "Bowler", 5500000, "Kolkata Knight Riders", 2022, "Indian"], ["Ashton Turner", "All-Rounder", 5000000, "Rajasthan Royals", 2019, "Indian"], ["Ashwin Hebbar", "Batsman", 2000000, "Delhi Capitals", 2022, "Indian"], ["Asif K M", "Bowler", 4000000, "Chennai Super Kings", 2018, "Indian"], ["Atharva Taide", "All-Rounder", 2000000, "Punjab Kings", 2022, "Indian"], ["Avesh Khan", "Bowler", 7000000, "Delhi Daredevils", 2018, "Indian"], ["Avesh Khan", "Bowler", 100000000, "Lucknow Super Giants", 2022, "Indian"], ["Axar Rajesh Patel", "All-Rounder", 50000000, "Delhi Capitals", 2019, "Indian"], ["Ayush Badoni", "All-Rounder", 2000000, "Lucknow Super Giants", 2022, "Indian"], ["B. Sai Sudharsan", "All-Rounder", 2000000, "Gujarat Titans", 2022, "Indian"], ["Baba Aparajith", "Batsman", 1000000, "Chennai Super Kings", 2014, "Indian"], ["Baba Aparajith", "All-Rounder", 1000000, "Rising Pune Supergiant", 2016, "Indian"], ["Baba Indrajith", "Wicket Keeper", 2000000, "Kolkata Knight Riders", 2022, "Indian"], ["Baltej Dhanda", "Bowler", 2000000, "Punjab Kings", 2022, "Indian"], ["Bandaru Ayyappa", "Bowler", 2000000, "Delhi Capitals", 2019, "Indian"], ["Barinder Singh Saran", "Bowler", 1000000, "Rajasthan Royals", 2015, "Indian"], ["Barinder Singh Sran", "Bowler", 12000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Barinder Singh Sran", "Bowler", 22000000, "Kings XI Punjab", 2018, "Indian"], ["Barinder Singh Sran", "Bowler", 34000000, "Mumbai Indians", 2019, "Indian"], ["Basil Thampi", "Bowler", 8500000, "Gujarat Lions", 2017, "Indian"], ["Basil Thampi", "Bowler", 9500000, "Sunrisers Hyderabad", 2018, "Indian"], ["Basil Thampi", "Bowler", 3000000, "Mumbai Indians", 2022, "Indian"], ["Ben Cutting", "Bowler", 8000000, "Rajasthan Royals", 2014, "Overseas"], ["Ben Cutting", "All-Rounder", 5000000, "Sunrisers Hyderabad", 2016, "Overseas"], ["Ben Cutting", "All-Rounder", 22000000, "Mumbai Indians", 2018, "Overseas"], ["Ben Cutting", "All-Rounder", 7500000, "Kolkata Knight Riders", 2021, "Overseas"], ["Ben Dunk", "Wicket Keeper", 2000000, "Mumbai Indians", 2014, "Overseas"], ["Ben Dwarshuis", "Bowler", 14000000, "Kings XI Punjab", 2018, "Overseas"], ["Ben Hilfenhaus", "Bowler", 10000000, "Chennai Super Kings", 2014, "Overseas"], ["Ben Laughlin", "Bowler", 1500000, "Chennai Super Kings", 2013, "Overseas"], ["Ben Laughlin", "Bowler", 3000000, "Sunrisers Hyderabad", 2017, "Overseas"], ["Ben Laughlin", "Bowler", 5000000, "Rajasthan Royals", 2018, "Overseas"], ["Benjamin Stokes", "All-Rounder", 145000000, "Rising Pune Supergiant", 2017, "Overseas"], ["Benjamin Stokes", "All-Rounder", 125000000, "Rajasthan Royals", 2018, "Overseas"], ["Benny Howell", "All-Rounder", 4000000, "Punjab Kings", 2022, "Overseas"], ["Beuran Hendricks", "Bowler", 18000000, "Kings XI Punjab", 2014, "Overseas"], ["Bhanuka Rajapaksa", "Batsman", 5000000, "Punjab Kings", 2022, "Overseas"], ["Bhuvneshwar Kumar", "Bowler", 42500000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Bhuvneshwar Kumar", "Bowler", 42000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Billy Stanlake", "Bowler", 3000000, "Royal Challengers Bangalore", 2017, "Overseas"], ["Billy Stanlake", "Batsman", 5000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Bipul Sharma", "All-Rounder", 2000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Brad Hodge", "Batsman", 24000000, "Rajasthan Royals", 2014, "Overseas"], ["Brad Hogg", "Bowler", 5000000, "Kolkata Knight Riders", 2015, "Overseas"], ["Brendan Taylor", "Wicket Keeper", 3000000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Brendon McCullum", "Wicket Keeper", 32500000, "Chennai Super Kings", 2014, "Overseas"], ["Brendon McCullum", "Batsman", 36000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["C Hari Nishaanth", "Batsman", 2000000, "Chennai Super Kings", 2021, "Indian"], ["C.Hari Nishaanth", "Batsman", 2000000, "Chennai Super Kings", 2022, "Indian"], ["C.M. Gautam", "Wicket Keeper", 2000000, "Mumbai Indians", 2014, "Indian"], ["C.M. Gautam", "Wicket Keeper", 2000000, "Delhi Daredevils", 2015, "Indian"], ["Cameron Delport", "All-Rounder", 3000000, "Kolkata Knight Riders", 2018, "Overseas"], ["Carlos Brathwaite", "All-Rounder", 42000000, "Delhi Daredevils", 2016, "Overseas"], ["Carlos Brathwaite", "All-Rounder", 20000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Carlos Brathwaite", "All-Rounder", 50000000, "Kolkata Knight Riders", 2019, "Overseas"], ["Chaitanya Bishnoi", "All-Rounder", 2000000, "Chennai Super Kings", 2018, "Indian"], ["Chama Milind", "Bowler", 1000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Chama Milind", "Bowler", 1000000, "Delhi Daredevils", 2016, "Indian"], ["Chama Milind", "Bowler", 2500000, "Royal Challengers Bangalore", 2022, "Indian"], ["Chamika Karunaratne", "All-Rounder", 5000000, "Kolkata Knight Riders", 2022, "Overseas"], ["Chetan Sakariya", "Bowler", 12000000, "Rajasthan Royals", 2021, "Indian"], ["Chetan Sakariya", "Bowler", 42000000, "Delhi Capitals", 2022, "Indian"], ["Cheteshwar Pujara", "Batsman", 19000000, "Kings XI Punjab", 2014, "Indian"], ["Cheteshwar Pujara", "Batsman", 5000000, "Chennai Super Kings", 2021, "Indian"], ["Chirag Suri", "Batsman", 1000000, "Gujarat Lions", 2017, "Indian"], ["Chris Green", "All-Rounder", 2000000, "Kolkata Knight Riders", 2020, "Overseas"], ["Chris Jordan", "All-Rounder", 5000000, "Sunrisers Hyderabad", 2017, "Overseas"], ["Chris Jordan", "All-Rounder", 10000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Chris Jordan", "All-Rounder", 30000000, "Kings XI Punjab", 2020, "Overseas"], ["Chris Jordan", "All-Rounder", 36000000, "Chennai Super Kings", 2022, "Overseas"], ["Chris Lynn", "Batsman", 13000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Chris Lynn", "Batsman", 96000000, "Kolkata Knight Riders", 2018, "Overseas"], ["Chris Lynn", "Batsman", 20000000, "Mumbai Indians", 2020, "Overseas"], ["Chris Woakes", "All-Rounder", 42000000, "Kolkata Knight Riders", 2017, "Overseas"], ["Chris Woakes", "All-Rounder", 74000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["Chris Woakes", "All-Rounder", 15000000, "Delhi Capitals", 2020, "Overseas"], ["Christopher Barnwell", "All-Rounder", 3750000, "Royal Challengers Bangalore", 2013, "Overseas"], ["Christopher Gayle", "Batsman", 20000000, "Kings XI Punjab", 2018, "Overseas"], ["Christopher Morris", "All-Rounder", 46875000, "Chennai Super Kings", 2013, "Overseas"], ["Christopher Morris", "All-Rounder", 14000000, "Rajasthan Royals", 2015, "Overseas"], ["Christopher Morris", "All-Rounder", 70000000, "Delhi Daredevils", 2016, "Overseas"], ["Christopher Morris", "All-Rounder", 100000000, "Royal Challengers Bangalore", 2020, "Overseas"], ["Christopher Morris", "All-Rounder", 162500000, "Rajasthan Royals", 2021, "Overseas"], ["Clinton McKay", "Bowler", 7500000, "Sunrisers Hyderabad", 2013, "Overseas"], ["Colin De Grandhomme", "All-Rounder", 22000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["Colin Ingram", "Batsman", 64000000, "Delhi Capitals", 2019, "Overseas"], ["Colin Munro", "All-Rounder", 3000000, "Kolkata Knight Riders", 2016, "Overseas"], ["Colin Munro", "All-Rounder", 19000000, "Delhi Daredevils", 2018, "Overseas"], ["Corey Anderson", "All-Rounder", 45000000, "Mumbai Indians", 2014, "Overseas"], ["Corey Anderson", "All-Rounder", 10000000, "Delhi Daredevils", 2017, "Overseas"], ["Dale Steyn", "Bowler", 23000000, "Gujarat Lions", 2016, "Overseas"], ["Dale Steyn", "Bowler", 20000000, "Royal Challengers Bangalore", 2020, "Overseas"], ["Dan Christian", "All-Rounder", 48000000, "Royal Challengers Bangalore", 2021, "Overseas"], ["Daniel Christian", "All-Rounder", 7500000, "Royal Challengers Bangalore", 2013, "Overseas"], ["Daniel Christian", "All-Rounder", 10000000, "Rising Pune Supergiant", 2017, "Overseas"], ["Daniel Christian", "All-Rounder", 15000000, "Delhi Daredevils", 2018, "Overseas"], ["Daniel Sams", "All-Rounder", 26000000, "Mumbai Indians", 2022, "Overseas"], ["Darcy Short", "All-Rounder", 40000000, "Rajasthan Royals", 2018, "Overseas"], ["Darren Bravo", "Batsman", 5000000, "Kolkata Knight Riders", 2017, "Overseas"], ["Darren Sammy", "All-Rounder", 31875000, "Sunrisers Hyderabad", 2013, "Overseas"], ["Darren Sammy", "All-Rounder", 35000000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Darren Sammy", "All-Rounder", 28000000, "Royal Challengers Bangalore", 2015, "Overseas"], ["Darren Sammy", "All-Rounder", 3000000, "Kings XI Punjab", 2017, "Overseas"], ["Darshan Nalkande", "All-Rounder", 3000000, "Kings XI Punjab", 2019, "Indian"], ["Darshan Nalkande", "All-Rounder", 2000000, "Gujarat Titans", 2022, "Indian"], ["Daryl Mitchell", "All-Rounder", 7500000, "Rajasthan Royals", 2022, "Overseas"], ["David Miller", "Batsman", 30000000, "Kings XI Punjab", 2018, "Overseas"], ["David Miller", "Batsman", 7500000, "Rajasthan Royals", 2020, "Overseas"], ["David Miller", "Batsman", 30000000, "Gujarat Titans", 2022, "Overseas"], ["David Warner", "Batsman", 55000000, "Sunrisers Hyderabad", 2014, "Overseas"], ["David Warner", "Batsman", 62500000, "Delhi Capitals", 2022, "Overseas"], ["David Wiese", "All-Rounder", 28000000, "Royal Challengers Bangalore", 2015, "Overseas"], ["David Willey", "All-Rounder", 20000000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Dawid Malan", "All-Rounder", 15000000, "Punjab Kings", 2021, "Overseas"], ["Debabrata Das", "Wicket Keeper", 2000000, "Kolkata Knight Riders", 2014, "Indian"], ["Deepak Chahar", "All-Rounder", 1000000, "Rising Pune Supergiant", 2016, "Indian"], ["Deepak Chahar", "All-Rounder", 8000000, "Chennai Super Kings", 2018, "Indian"], ["Deepak Chahar", "Bowler", 140000000, "Chennai Super Kings", 2022, "Indian"], ["Deepak Hooda", "Bowler", 4000000, "Rajasthan Royals", 2014, "Indian"], ["Deepak Hooda", "All-Rounder", 42000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Deepak Hooda", "All-Rounder", 36000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Deepak Hooda", "All-Rounder", 5000000, "Kings XI Punjab", 2020, "Indian"], ["Deepak Hooda", "All-Rounder", 57500000, "Lucknow Super Giants", 2022, "Indian"], ["Deepak Punia", "All-Rounder", 1000000, "Mumbai Indians", 2016, "Indian"], ["Devdutt Padikkal", "Batsman", 2000000, "Royal Challengers Bangalore", 2019, "Indian"], ["Devdutt Padikkal", "Batsman", 77500000, "Rajasthan Royals", 2022, "Indian"], ["Devon Conway", "Batsman", 10000000, "Chennai Super Kings", 2022, "Overseas"], ["Dewald Brevis", "Batsman", 30000000, "Mumbai Indians", 2022, "Overseas"], ["Dhawal Kulkarni", "Bowler", 11000000, "Rajasthan Royals", 2014, "Indian"], ["Dhawal Kulkarni", "Bowler", 20000000, "Gujarat Lions", 2016, "Indian"], ["Dhawal Kulkarni", "Bowler", 7500000, "Rajasthan Royals", 2018, "Indian"], ["Dhruv Jurel", "Wicket Keeper", 2000000, "Rajasthan Royals", 2022, "Indian"], ["Dhruv Shorey", "All-Rounder", 2000000, "Chennai Super Kings", 2018, "Indian"], ["Digvijay Deshmukh", "All-Rounder", 2000000, "Mumbai Indians", 2020, "Indian"], ["Dinesh Karthik", "Wicket Keeper", 125000000, "Delhi Daredevils", 2014, "Indian"], ["Dinesh Karthik", "Wicket Keeper", 105000000, "Royal Challengers Bangalore", 2015, "Indian"], ["Dinesh Karthik", "Wicket Keeper", 23000000, "Gujarat Lions", 2016, "Indian"], ["Dinesh Karthik", "Wicket Keeper", 74000000, "Kolkata Knight Riders", 2018, "Indian"], ["Dinesh Karthik", "Wicket Keeper", 55000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Dinesh Salunkhe", "All-Rounder", 1000000, "Rajasthan Royals", 2015, "Indian"], ["Dirk Nannes", "Bowler", 45000000, "Chennai Super Kings", 2013, "Overseas"], ["Dishant Yagnik", "Wicket Keeper", 3000000, "Rajasthan Royals", 2014, "Indian"], ["Dominic Drakes", "All-Rounder", 11000000, "Gujarat Titans", 2022, "Overseas"], ["Domnic Joseph Muthuswamy", "Bowler", 7500000, "Delhi Daredevils", 2015, "Overseas"], ["Dushmanta Chameera", "Bowler", 20000000, "Lucknow Super Giants", 2022, "Overseas"], ["Dushmantha Chameera", "Bowler", 5000000, "Rajasthan Royals", 2018, "Overseas"], ["Dwaine Pretorius", "All-Rounder", 5000000, "Chennai Super Kings", 2022, "Overseas"], ["Dwayne Bravo", "All-Rounder", 64000000, "Chennai Super Kings", 2018, "Overseas"], ["Dwayne Bravo", "All-Rounder", 44000000, "Chennai Super Kings", 2022, "Overseas"], ["Dwayne Smith", "Batsman", 45000000, "Chennai Super Kings", 2014, "Overseas"], ["Dwayne Smith", "All-Rounder", 23000000, "Gujarat Lions", 2016, "Overseas"], ["Eklavya Dwivedi", "Wicket Keeper", 1000000, "Chennai Super Kings", 2015, "Indian"], ["Eklavya Dwivedi", "Wicket Keeper", 10000000, "Gujarat Lions", 2016, "Indian"], ["Eklavya Dwivedi", "Wicket Keeper", 7500000, "Sunrisers Hyderabad", 2017, "Indian"], ["Eoin Morgan", "Batsman", 15000000, "Sunrisers Hyderabad", 2015, "Overseas"], ["Eoin Morgan", "Batsman", 20000000, "Kings XI Punjab", 2017, "Overseas"], ["Eoin Morgan", "Batsman", 52500000, "Kolkata Knight Riders", 2020, "Overseas"], ["Evin Lewis", "Batsman", 38000000, "Mumbai Indians", 2018, "Overseas"], ["Evin Lewis", "Batsman", 20000000, "Lucknow Super Giants", 2022, "Overseas"], ["Fabian Allen", "All-Rounder", 5000000, "Sunrisers Hyderabad", 2020, "Overseas"], ["Fabian Allen", "All-Rounder", 7500000, "Punjab Kings", 2021, "Overseas"], ["Fabian Allen", "All-Rounder", 7500000, "Mumbai Indians", 2022, "Overseas"], ["Faf Du Plessis", "Batsman", 47500000, "Chennai Super Kings", 2014, "Overseas"], ["Faf Du Plessis", "Batsman", 16000000, "Chennai Super Kings", 2018, "Overseas"], ["Faf Du Plessis", "Batsman", 70000000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Farhaan Behardien", "All-Rounder", 3000000, "Kings XI Punjab", 2016, "Overseas"], ["Fazalhaq Farooqi", "Bowler", 5000000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Fidel Edwards", "Bowler", 15750000, "Rajasthan Royals", 2013, "Overseas"], ["Finn Allen", "Batsman", 8000000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Gautam Gambhir", "Batsman", 28000000, "Delhi Daredevils", 2018, "Indian"], ["George Bailey", "Batsman", 32500000, "Kings XI Punjab", 2014, "Overseas"], ["Glenn Maxwell", "All-Rounder", 75000000, "Mumbai Indians", 2013, "Overseas"], ["Glenn Maxwell", "All-Rounder", 60000000, "Kings XI Punjab", 2014, "Overseas"], ["Glenn Maxwell", "All-Rounder", 90000000, "Delhi Daredevils", 2018, "Overseas"], ["Glenn Maxwell", "All-Rounder", 107500000, "Kings XI Punjab", 2020, "Overseas"], ["Glenn Maxwell", "All-Rounder", 142500000, "Royal Challengers Bangalore", 2021, "Overseas"], ["Glenn Phillips", "Wicket Keeper", 15000000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Gurinder Sandhu", "Bowler", 17000000, "Delhi Daredevils", 2015, "Indian"], ["Gurkeerat Singh Mann", "All-Rounder", 5000000, "Gujarat Titans", 2022, "Indian"], ["Gurkeerat Singh Mann", "All-Rounder", 7500000, "Delhi Daredevils", 2018, "Indian"], ["Gurkeerat Singh Mann", "All-Rounder", 5000000, "Royal Challengers Bangalore", 2019, "Indian"], ["Gurkeerat Singh Mann", "Batsman", 13000000, "Kings XI Punjab", 2014, "Indian"], ["Hanuma Vihari", "Batsman", 1000000, "Sunrisers Hyderabad", 2015, "Indian"], ["Hanuma Vihari", "Batsman", 20000000, "Delhi Capitals", 2019, "Indian"], ["Harbhajan Singh", "Bowler", 20000000, "Chennai Super Kings", 2018, "Indian"], ["Harbhajan Singh", "Bowler", 20000000, "Kolkata Knight Riders", 2021, "Indian"], ["Hardik Pandya", "All-Rounder", 1000000, "Mumbai Indians", 2015, "Indian"], ["Hardus Viljoen", "Bowler", 7500000, "Kings XI Punjab", 2019, "Overseas"], ["Harpreet Brar", "All-Rounder", 2000000, "Kings XI Punjab", 2019, "Indian"], ["Harpreet Brar", "All-Rounder", 38000000, "Punjab Kings", 2022, "Indian"], ["Harry Gurney", "Bowler", 7500000, "Kolkata Knight Riders", 2019, "Overseas"], ["Harshal Patel", "Bowler", 4000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Harshal Patel", "All-Rounder", 2000000, "Delhi Daredevils", 2018, "Indian"], ["Harshal Patel", "All-Rounder", 107500000, "Royal Challengers Bangalore", 2022, "Indian"], ["Heinrich Klaasen", "Wicket Keeper", 5000000, "Royal Challengers Bangalore", 2019, "Overseas"], ["Himmat Singh", "Batsman", 6500000, "Royal Challengers Bangalore", 2019, "Indian"], ["Hrithik Shokeen", "All-Rounder", 2000000, "Mumbai Indians", 2022, "Indian"], ["HS Sharath", "Bowler", 1000000, "Delhi Daredevils", 2014, "Indian"], ["Imran Tahir", "Bowler", 10000000, "Chennai Super Kings", 2018, "Overseas"], ["Iqbal Abdullah", "All-Rounder", 6500000, "Rajasthan Royals", 2014, "Indian"], ["Iqbal Abdullah", "All-Rounder", 1000000, "Royal Challengers Bangalore", 2016, "Indian"], ["Irfan Pathan", "All-Rounder", 24000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Irfan Pathan", "All-Rounder", 15000000, "Chennai Super Kings", 2015, "Indian"], ["Irfan Pathan", "All-Rounder", 10000000, "Rising Pune Supergiant", 2016, "Indian"], ["Ishan Kishan", "Wicket Keeper", 3500000, "Gujarat Lions", 2016, "Indian"], ["Ishan Kishan", "Wicket Keeper", 62000000, "Mumbai Indians", 2018, "Indian"], ["Ishan Kishan", "Wicket Keeper", 152500000, "Mumbai Indians", 2022, "Indian"], ["Ishan Porel", "Bowler", 2500000, "Punjab Kings", 2022, "Indian"], ["Ishank Jaggi", "Batsman", 1000000, "Kolkata Knight Riders", 2017, "Indian"], ["Ishank Jaggi", "Batsman", 2000000, "Kolkata Knight Riders", 2018, "Indian"], ["Ishant Sharma", "Bowler", 26000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Ishant Sharma", "Bowler", 38000000, "Rising Pune Supergiant", 2016, "Indian"], ["Ishant Sharma", "Bowler", 11000000, "Delhi Capitals", 2019, "Indian"], ["Ishwar Chandra Pandey", "Bowler", 15000000, "Chennai Super Kings", 2014, "Indian"], ["Ishwar Chandra Pandey", "Bowler", 2000000, "Rising Pune Supergiant", 2016, "Indian"], ["Isuru Udana", "All-Rounder", 5000000, "Royal Challengers Bangalore", 2020, "Overseas"], ["J Suchith", "Bowler", 3000000, "Sunrisers Hyderabad", 2021, "Indian"], ["J Suchith", "All-Rounder", 1000000, "Mumbai Indians", 2015, "Indian"], ["Jacob Oram", "All-Rounder", 3750000, "Mumbai Indians", 2013, "Overseas"], ["Jacques Kallis", "All-Rounder", 55000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Jagadeesha Suchith", "Bowler", 2000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Jalaj Saxena", "All-Rounder", 9000000, "Mumbai Indians", 2014, "Indian"], ["Jalaj Saxena", "All-Rounder", 1000000, "Royal Challengers Bangalore", 2015, "Indian"], ["Jalaj Saxena", "All-Rounder", 2000000, "Delhi Capitals", 2019, "Indian"], ["Jalaj Saxena", "All-Rounder", 3000000, "Punjab Kings", 2021, "Indian"], ["James Faulkner", "All-Rounder", 30000000, "Rajasthan Royals", 2013, "Overseas"], ["James Neesham", "All-Rounder", 10000000, "Delhi Daredevils", 2014, "Overseas"], ["James Neesham", "All-Rounder", 5000000, "Kolkata Knight Riders", 2015, "Overseas"], ["James Neesham", "All-Rounder", 5000000, "Kings XI Punjab", 2020, "Overseas"], ["James Neesham", "All-Rounder", 5000000, "Mumbai Indians", 2021, "Overseas"], ["James Neesham", "All-Rounder", 15000000, "Rajasthan Royals", 2022, "Overseas"], ["Jaskaran Singh", "Bowler", 1000000, "Rising Pune Supergiant", 2016, "Indian"], ["Jason Behrendorff", "Bowler", 15000000, "Mumbai Indians", 2018, "Overseas"], ["Jason Behrendorff", "Bowler", 7500000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Jason Holder", "Bowler", 1500000, "Chennai Super Kings", 2013, "Overseas"], ["Jason Holder", "Bowler", 7500000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Jason Holder", "All-Rounder", 7000000, "Kolkata Knight Riders", 2016, "Overseas"], ["Jason Holder", "All-Rounder", 87500000, "Lucknow Super Giants", 2022, "Overseas"], ["Jason Roy", "Batsman", 10000000, "Gujarat Lions", 2017, "Overseas"], ["Jason Roy", "Batsman", 15000000, "Delhi Daredevils", 2018, "Overseas"], ["Jason Roy", "Batsman", 15000000, "Delhi Capitals", 2020, "Overseas"], ["Jason Roy", "Batsman", 20000000, "Gujarat Titans", 2022, "Overseas"], ["Jasprit Bumrah", "Bowler", 12000000, "Mumbai Indians", 2014, "Indian"], ["Jatin Saxena", "All-Rounder", 2000000, "Rajasthan Royals", 2018, "Indian"], ["Javon Searless", "All-Rounder", 3000000, "Kolkata Knight Riders", 2018, "Indian"], ["Jayant Yadav", "All-Rounder", 1000000, "Delhi Daredevils", 2014, "Indian"], ["Jayant Yadav", "All-Rounder", 5000000, "Delhi Daredevils", 2018, "Indian"], ["Jayant Yadav", "All-Rounder", 17000000, "Gujarat Titans", 2022, "Indian"], ["Jaydev Shah", "All-Rounder", 2000000, "Gujarat Lions", 2016, "Indian"], ["Jaydev Unadkat", "Bowler", 39375000, "Royal Challengers Bangalore", 2013, "Indian"], ["Jaydev Unadkat", "Bowler", 28000000, "Delhi Daredevils", 2014, "Indian"], ["Jaydev Unadkat", "Bowler", 11000000, "Delhi Daredevils", 2015, "Indian"], ["Jaydev Unadkat", "Bowler", 16000000, "Kolkata Knight Riders", 2016, "Indian"], ["Jaydev Unadkat", "Bowler", 3000000, "Rising Pune Supergiant", 2017, "Indian"], ["Jaydev Unadkat", "Bowler", 115000000, "Rajasthan Royals", 2018, "Indian"], ["Jaydev Unadkat", "Bowler", 84000000, "Rajasthan Royals", 2019, "Indian"], ["Jaydev Unadkat", "Bowler", 30000000, "Rajasthan Royals", 2020, "Indian"], ["Jaydev Unadkat", "Bowler", 13000000, "Mumbai Indians", 2022, "Indian"], ["Jean-Paul Duminy", "Batsman", 22000000, "Delhi Daredevils", 2014, "Overseas"], ["Jean-Paul Duminy", "All-Rounder", 10000000, "Mumbai Indians", 2018, "Overseas"], ["Jeevan Mendis", "All-Rounder", 3750000, "Delhi Daredevils", 2013, "Overseas"], ["Jesse Ryder", "All-Rounder", 19500000, "Delhi Daredevils", 2013, "Overseas"], ["Jhye Richardson", "Bowler", 140000000, "Punjab Kings", 2021, "Overseas"], ["Jitesh Sharma", "Wicket Keeper", 1000000, "Mumbai Indians", 2016, "Indian"], ["Jitesh Sharma", "Wicket Keeper", 2000000, "Punjab Kings", 2022, "Indian"], ["Joe Denly", "Batsman", 10000000, "Kolkata Knight Riders", 2019, "Overseas"], ["Joel Paris", "Bowler", 3000000, "Delhi Daredevils", 2016, "Overseas"], ["Jofra Archer", "All-Rounder", 72000000, "Rajasthan Royals", 2018, "Overseas"], ["Jofra Archer", "All-Rounder", 80000000, "Mumbai Indians", 2022, "Overseas"], ["Johan Botha", "All-Rounder", 33750000, "Delhi Daredevils", 2013, "Overseas"], ["John Hastings", "All-Rounder", 5000000, "Chennai Super Kings", 2014, "Overseas"], ["John Hastings", "Bowler", 13000000, "Kolkata Knight Riders", 2016, "Overseas"], ["Jonny Bairstow", "Wicket Keeper", 22000000, "Sunrisers Hyderabad", 2019, "Overseas"], ["Jonny Bairstow", "Wicket Keeper", 67500000, "Punjab Kings", 2022, "Overseas"], ["Jos Buttler", "Wicket Keeper", 38000000, "Mumbai Indians", 2016, "Overseas"], ["Jos Buttler", "Wicket Keeper", 44000000, "Rajasthan Royals", 2018, "Overseas"], ["Josh Hazlewood", "Bowler", 5000000, "Mumbai Indians", 2014, "Overseas"], ["Josh Hazlewood", "Bowler", 20000000, "Chennai Super Kings", 2020, "Overseas"], ["Josh Hazlewood", "Bowler", 77500000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Joshua Philippe", "Wicket Keeper", 2000000, "Royal Challengers Bangalore", 2020, "Overseas"], ["Juan Theron", "Bowler", 3000000, "Rajasthan Royals", 2015, "Overseas"], ["Krishnappa Gowtham", "All-Rounder", 9000000, "Lucknow Super Giants", 2022, "Indian"], ["K.Bhagath Varma", "All-Rounder", 2000000, "Chennai Super Kings", 2021, "Indian"], ["K.Bhagath Varma", "All-Rounder", 2000000, "Chennai Super Kings", 2022, "Indian"], ["K.C Cariappa", "Bowler", 2000000, "Rajasthan Royals", 2021, "Indian"], ["K.C Cariappa", "Bowler", 3000000, "Rajasthan Royals", 2022, "Indian"], ["K.C. Cariappa", "Bowler", 24000000, "Kolkata Knight Riders", 2015, "Indian"], ["K.C. Cariappa", "Bowler", 8000000, "Kings XI Punjab", 2016, "Indian"], ["K.K. Jiyaz", "Bowler", 1000000, "Delhi Daredevils", 2015, "Indian"], ["K.M. Asif", "Bowler", 2000000, "Chennai Super Kings", 2022, "Indian"], ["K.S. Bharat", "Wicket Keeper", 20000000, "Delhi Capitals", 2022, "Indian"], ["Kagiso Rabada", "Bowler", 50000000, "Delhi Daredevils", 2017, "Overseas"], ["Kagiso Rabada", "Bowler", 42000000, "Delhi Daredevils", 2018, "Overseas"], ["Kagiso Rabada", "Bowler", 92500000, "Punjab Kings", 2022, "Overseas"], ["Kamlesh Nagarkoti", "All-Rounder", 32000000, "Kolkata Knight Riders", 2018, "Indian"], ["Kamlesh Nagarkoti", "All-Rounder", 11000000, "Delhi Capitals", 2022, "Indian"], ["Kane Richardson", "Bowler", 52500000, "Pune Warriors India", 2013, "Overseas"], ["Kane Richardson", "Bowler", 10000000, "Rajasthan Royals", 2014, "Overseas"], ["Kane Richardson", "Bowler", 20000000, "Royal Challengers Bangalore", 2016, "Overseas"], ["Kane Richardson", "Bowler", 40000000, "Royal Challengers Bangalore", 2020, "Overseas"], ["Kane Williamson", "All-Rounder", 6000000, "Sunrisers Hyderabad", 2015, "Overseas"], ["Kane Williamson", "Batsman", 30000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Kanishk Seth", "All-Rounder", 2000000, "Chennai Super Kings", 2018, "Indian"], ["Karan Sharma", "All-Rounder", 2000000, "Lucknow Super Giants", 2022, "Indian"], ["Karanveer Singh", "All-Rounder", 1000000, "Kings XI Punjab", 2014, "Indian"], ["Karn Sharma", "Bowler", 37500000, "Sunrisers Hyderabad", 2014, "Indian"], ["Karn Sharma", "All-Rounder", 32000000, "Mumbai Indians", 2017, "Indian"], ["Karn Sharma", "Bowler", 50000000, "Chennai Super Kings", 2018, "Indian"], ["Karn Sharma", "Bowler", 5000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Kartik Tyagi", "Bowler", 13000000, "Rajasthan Royals", 2020, "Indian"], ["Kartik Tyagi", "Bowler", 40000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Karun Nair", "Batsman", 7500000, "Rajasthan Royals", 2014, "Indian"], ["Karun Nair", "Batsman", 40000000, "Delhi Daredevils", 2016, "Indian"], ["Karun Nair", "Batsman", 56000000, "Kings XI Punjab", 2018, "Indian"], ["Karun Nair", "Batsman", 5000000, "Kolkata Knight Riders", 2021, "Indian"], ["Karun Nair", "Batsman", 14000000, "Rajasthan Royals", 2022, "Indian"], ["Kedar Jadhav", "Batsman", 20000000, "Delhi Daredevils", 2014, "Indian"], ["Kedar Jadhav", "All-Rounder", 78000000, "Chennai Super Kings", 2018, "Indian"], ["Kedar Jadhav", "All-Rounder", 20000000, "Sunrisers Hyderabad", 2021, "Indian"], ["Keemo Paul", "All-Rounder", 5000000, "Delhi Capitals", 2019, "Overseas"], ["Kevin Pietersen", "Batsman", 90000000, "Delhi Daredevils", 2014, "Overseas"], ["Kevin Pietersen", "Batsman", 20000000, "Sunrisers Hyderabad", 2015, "Overseas"], ["Kevin Pietersen", "Batsman", 35000000, "Rising Pune Supergiant", 2016, "Overseas"], ["Kevon Cooper", "All-Rounder", 3000000, "Rajasthan Royals", 2014, "Overseas"], ["Kieron Pollard", "All-Rounder", 54000000, "Mumbai Indians", 2018, "Overseas"], ["Kishore Pramod Kamath", "All-Rounder", 14000000, "Mumbai Indians", 2016, "Indian"], ["KL Rahul", "Batsman", 10000000, "Sunrisers Hyderabad", 2014, "Indian"], ["KL Rahul", "Batsman", 110000000, "Kings XI Punjab", 2018, "Indian"], ["Kona Srikar Bharat", "Wicket Keeper", 1000000, "Delhi Daredevils", 2015, "Indian"], ["Kona Srikar Bharat", "Wicket Keeper", 2000000, "Royal Challengers Bangalore", 2021, "Indian"], ["Krishnappa Gowtham", "All-Rounder", 20000000, "Mumbai Indians", 2017, "Indian"], ["Krishnappa Gowtham", "Bowler", 62000000, "Rajasthan Royals", 2018, "Indian"], ["Krishnappa Gowtham", "All-Rounder", 92500000, "Chennai Super Kings", 2021, "Indian"], ["Krismar Santokie", "Bowler", 3000000, "Mumbai Indians", 2014, "Overseas"], ["Krunal Pandya", "All-Rounder", 20000000, "Mumbai Indians", 2016, "Indian"], ["Krunal Pandya", "All-Rounder", 88000000, "Mumbai Indians", 2018, "Indian"], ["Krunal Pandya", "All-Rounder", 82500000, "Lucknow Super Giants", 2022, "Indian"], ["Kshitiz Sharma", "All-Rounder", 2000000, "Chennai Super Kings", 2018, "Indian"], ["Kuldeep Sen", "Bowler", 2000000, "Rajasthan Royals", 2022, "Indian"], ["Kuldeep Yadav", "Bowler", 4000000, "Kolkata Knight Riders", 2014, "Indian"], ["Kuldeep Yadav", "Bowler", 58000000, "Kolkata Knight Riders", 2018, "Indian"], ["Kuldeep Yadav", "Bowler", 20000000, "Delhi Capitals", 2022, "Indian"], ["Kuldip Yadav", "Bowler", 2000000, "Rajasthan Royals", 2021, "Indian"], ["Kuldip Yadav", "Bowler", 2000000, "Rajasthan Royals", 2022, "Indian"], ["Kulwant Khejroliya", "Bowler", 1000000, "Mumbai Indians", 2017, "Indian"], ["Kulwant Khejroliya", "Bowler", 8500000, "Royal Challengers Bangalore", 2018, "Indian"], ["Kusal Janith Perera", "Wicket Keeper", 1500000, "Rajasthan Royals", 2013, "Indian"], ["Kyle Abbott", "Bowler", 3000000, "Chennai Super Kings", 2015, "Overseas"], ["Kyle Abbott", "Bowler", 21000000, "Kings XI Punjab", 2016, "Overseas"], ["Kyle Jamieson", "All-Rounder", 150000000, "Royal Challengers Bangalore", 2021, "Overseas"], ["Kyle Mayers", "All-Rounder", 5000000, "Lucknow Super Giants", 2022, "Overseas"], ["Lakshmipathy Balaji", "Bowler", 18000000, "Kings XI Punjab", 2014, "Indian"], ["Lalit Yadav", "All-Rounder", 2000000, "Delhi Capitals", 2020, "Indian"], ["Lalit Yadav", "All-Rounder", 6500000, "Delhi Capitals", 2022, "Indian"], ["Lasith Malinga", "Bowler", 20000000, "Mumbai Indians", 2019, "Overseas"], ["Laxmi Ratan Shukla", "All-Rounder", 15000000, "Delhi Daredevils", 2014, "Indian"], ["Laxmi Ratan Shukla", "All-Rounder", 3000000, "Sunrisers Hyderabad", 2015, "Indian"], ["Liam Livingstone", "All-Rounder", 5000000, "Rajasthan Royals", 2019, "Overseas"], ["Liam Livingstone", "All-Rounder", 7500000, "Rajasthan Royals", 2021, "Overseas"], ["Liam Livingstone", "All-Rounder", 115000000, "Punjab Kings", 2022, "Overseas"], ["Lockie Ferguson", "Bowler", 5000000, "Rising Pune Supergiant", 2017, "Overseas"], ["Lockie Ferguson", "Bowler", 16000000, "Kolkata Knight Riders", 2019, "Overseas"], ["Lockie Ferguson", "Bowler", 100000000, "Gujarat Titans", 2022, "Overseas"], ["Luke Pomersbach", "Batsman", 22500000, "Kings XI Punjab", 2013, "Overseas"], ["Lukman Hussain Meriwala", "Bowler", 2000000, "Delhi Capitals", 2021, "Indian"], ["Lungisani Ngidi", "Bowler", 5000000, "Chennai Super Kings", 2018, "Overseas"], ["Lungisani Ngidi", "Bowler", 5000000, "Delhi Capitals", 2022, "Overseas"], ["Luvnith Sisodia", "Wicket Keeper", 2000000, "Royal Challengers Bangalore", 2022, "Indian"], ["M Siddharth", "Bowler", 2000000, "Kolkata Knight Riders", 2020, "Indian"], ["M Siddharth", "Bowler", 2000000, "Delhi Capitals", 2021, "Indian"], ["M. Ashwin", "Bowler", 45000000, "Rising Pune Supergiant", 2016, "Indian"], ["M. Ashwin", "Bowler", 10000000, "Delhi Daredevils", 2017, "Indian"], ["M. Ashwin", "Bowler", 22000000, "Royal Challengers Bangalore", 2018, "Indian"], ["M. Ashwin", "Bowler", 2000000, "Kings XI Punjab", 2019, "Indian"], ["M. Harisankar Reddy", "Bowler", 2000000, "Chennai Super Kings", 2021, "Indian"], ["Washington Sundar", "All-Rounder", 32000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Maheesh Theekshana", "Bowler", 7000000, "Chennai Super Kings", 2022, "Overseas"], ["Mahipal Lomror", "All-Rounder", 1000000, "Delhi Daredevils", 2016, "Indian"], ["Mahipal Lomror", "All-Rounder", 2000000, "Rajasthan Royals", 2018, "Indian"], ["Mahipal Lomror", "All-Rounder", 9500000, "Royal Challengers Bangalore", 2022, "Indian"], ["Manan Ajay Sharma", "All-Rounder", 1000000, "Kolkata Knight Riders", 2016, "Indian"], ["Manan Vohra", "Batsman", 11000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Manan Vohra", "Batsman", 2000000, "Rajasthan Royals", 2019, "Indian"], ["Manan Vohra", "Batsman", 2000000, "Lucknow Super Giants", 2022, "Indian"], ["Mandeep Hardev Singh", "All-Rounder", 8000000, "Kings XI Punjab", 2014, "Indian"], ["Mandeep Singh", "All-Rounder", 14000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Mandeep Singh", "Batsman", 11000000, "Delhi Capitals", 2022, "Indian"], ["Manish Pandey", "Batsman", 17000000, "Kolkata Knight Riders", 2014, "Indian"], ["Manish Pandey", "Batsman", 110000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Manish Pandey", "Batsman", 46000000, "Lucknow Super Giants", 2022, "Indian"], ["Manjot Kalra", "Batsman", 2000000, "Delhi Daredevils", 2018, "Indian"], ["Manoj Tiwary", "Batsman", 28000000, "Delhi Daredevils", 2014, "Indian"], ["Manoj Tiwary", "Batsman", 5000000, "Rising Pune Supergiant", 2017, "Indian"], ["Manoj Tiwary", "Batsman", 10000000, "Kings XI Punjab", 2018, "Indian"], ["Manpreet Gony", "Bowler", 37500000, "Kings XI Punjab", 2013, "Indian"], ["Manpreet Gony", "Bowler", 6000000, "Gujarat Lions", 2017, "Indian"], ["Manprit Juneja", "Batsman", 1000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Manvinder Bisla", "Wicket Keeper", 6000000, "Kolkata Knight Riders", 2014, "Indian"], ["Manzoor Dar", "All-Rounder", 2000000, "Kings XI Punjab", 2018, "Indian"], ["Marchant De Lange", "Bowler", 3000000, "Mumbai Indians", 2014, "Overseas"], ["Marco Jansen", "All-Rounder", 2000000, "Mumbai Indians", 2021, "Overseas"], ["Marco Jansen", "All-Rounder", 42000000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Marcus Stoinis", "All-Rounder", 2500000, "Delhi Daredevils", 2015, "Overseas"], ["Marcus Stoinis", "All-Rounder", 5500000, "Kings XI Punjab", 2016, "Overseas"], ["Marcus Stoinis", "All-Rounder", 62000000, "Kings XI Punjab", 2018, "Overseas"], ["Marcus Stoinis", "All-Rounder", 48000000, "Delhi Capitals", 2020, "Overseas"], ["Mark Wood", "Bowler", 15000000, "Chennai Super Kings", 2018, "Overseas"], ["Mark Wood", "Bowler", 75000000, "Lucknow Super Giants", 2022, "Overseas"], ["Martin Guptill", "Batsman", 5000000, "Kings XI Punjab", 2017, "Overseas"], ["Martin Guptill", "Batsman", 10000000, "Sunrisers Hyderabad", 2019, "Overseas"], ["Matt Henry", "Bowler", 3000000, "Chennai Super Kings", 2014, "Overseas"], ["Matt Henry", "Bowler", 5000000, "Kings XI Punjab", 2017, "Overseas"], ["Matthew Wade", "Wicket Keeper", 24000000, "Gujarat Titans", 2022, "Overseas"], ["Mayank Agarwal", "Batsman", 16000000, "Delhi Daredevils", 2014, "Indian"], ["Mayank Agarwal", "Batsman", 10000000, "Kings XI Punjab", 2018, "Indian"], ["Mayank Dagar", "All-Rounder", 2000000, "Kings XI Punjab", 2018, "Indian"], ["Mayank Markande", "Bowler", 2000000, "Mumbai Indians", 2018, "Indian"], ["Mayank Markande", "Bowler", 6500000, "Mumbai Indians", 2022, "Indian"], ["Mayank Yadav", "Bowler", 2000000, "Lucknow Super Giants", 2022, "Indian"], ["Michael Clarke", "Batsman", 30000000, "Pune Warriors India", 2013, "Overseas"], ["Michael Hussey", "Batsman", 50000000, "Mumbai Indians", 2014, "Overseas"], ["Michael Hussey", "Batsman", 15000000, "Chennai Super Kings", 2015, "Overseas"], ["Midhun S", "All-Rounder", 2000000, "Rajasthan Royals", 2018, "Indian"], ["Milind Kumar", "Batsman", 1000000, "Delhi Daredevils", 2014, "Indian"], ["Milind Kumar", "All-Rounder", 2000000, "Royal Challengers Bangalore", 2019, "Indian"], ["Milind Tandon", "All-Rounder", 1000000, "Rising Pune Supergiant", 2017, "Indian"], ["Mitchell Johnson", "All-Rounder", 65000000, "Kings XI Punjab", 2014, "Overseas"], ["Mitchell Johnson", "Bowler", 20000000, "Mumbai Indians", 2017, "Overseas"], ["Mitchell Johnson", "Bowler", 20000000, "Kolkata Knight Riders", 2018, "Overseas"], ["Mitchell Marsh", "All-Rounder", 48000000, "Rising Pune Supergiant", 2016, "Overseas"], ["Mitchell Marsh", "All-Rounder", 20000000, "Sunrisers Hyderabad", 2020, "Overseas"], ["Mitchell Marsh", "All-Rounder", 65000000, "Delhi Capitals", 2022, "Overseas"], ["Mitchell McClenaghan", "Bowler", 3000000, "Mumbai Indians", 2015, "Overseas"], ["Mitchell Santner", "All-Rounder", 5000000, "Chennai Super Kings", 2018, "Overseas"], ["Mitchell Santner", "All-Rounder", 19000000, "Chennai Super Kings", 2022, "Overseas"], ["Mitchell Starc", "Bowler", 50000000, "Royal Challengers Bangalore", 2014, "Overseas"], ["Mitchell Starc", "Bowler", 94000000, "Kolkata Knight Riders", 2018, "Overseas"], ["Mithun Manhas", "All-Rounder", 3000000, "Chennai Super Kings", 2014, "Indian"], ["Moeen Ali", "All-Rounder", 17000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["Moeen Ali", "All-Rounder", 70000000, "Chennai Super Kings", 2021, "Overseas"], ["Mohammad Nabi", "All-Rounder", 3000000, "Sunrisers Hyderabad", 2017, "Overseas"], ["Mohammad Nabi", "All-Rounder", 10000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Mohammad Nabi", "All-Rounder", 10000000, "Kolkata Knight Riders", 2022, "Overseas"], ["Mohammad Shami", "Bowler", 42500000, "Delhi Daredevils", 2014, "Indian"], ["Mohammad Shami", "Bowler", 30000000, "Delhi Daredevils", 2018, "Indian"], ["Mohammad Shami", "Bowler", 48000000, "Kings XI Punjab", 2019, "Indian"], ["Mohammad Shami", "Bowler", 62500000, "Gujarat Titans", 2022, "Indian"], ["Mohammed Azharudeen", "Wicket Keeper", 2000000, "Royal Challengers Bangalore", 2021, "Indian"], ["Mohammed Siraj", "Bowler", 26000000, "Sunrisers Hyderabad", 2017, "Indian"], ["Mohammed Siraj", "Bowler", 26000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Mohd. Arshad Khan", "All-Rounder", 2000000, "Mumbai Indians", 2022, "Indian"], ["Mohit Sharma", "Bowler", 20000000, "Chennai Super Kings", 2014, "Indian"], ["Mohit Sharma", "Bowler", 65000000, "Kings XI Punjab", 2016, "Indian"], ["Mohit Sharma", "Bowler", 24000000, "Kings XI Punjab", 2018, "Indian"], ["Mohit Sharma", "Bowler", 50000000, "Chennai Super Kings", 2019, "Indian"], ["Mohit Sharma", "Bowler", 5000000, "Delhi Capitals", 2020, "Indian"], ["Mohsin Khan", "Bowler", 2000000, "Mumbai Indians", 2018, "Indian"], ["Mohsin Khan", "Bowler", 2000000, "Mumbai Indians", 2020, "Indian"], ["Mohsin Khan", "Bowler", 2000000, "Lucknow Super Giants", 2022, "Indian"], ["Moises Henriques", "All-Rounder", 22500000, "Royal Challengers Bangalore", 2013, "Overseas"], ["Moises Henriques", "All-Rounder", 10000000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Moises Henriques", "All-Rounder", 10000000, "Kings XI Punjab", 2019, "Overseas"], ["Moises Henriques", "All-Rounder", 42000000, "Punjab Kings", 2021, "Overseas"], ["Monu Singh", "Bowler", 2000000, "Chennai Super Kings", 2018, "Indian"], ["Morne Morkel", "Bowler", 28000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Mujeeb Zadran", "Bowler", 40000000, "Kings XI Punjab", 2018, "Overseas"], ["Mujeeb Zadran", "Bowler", 15000000, "Sunrisers Hyderabad", 2021, "Overseas"], ["Mukesh Choudhary", "Bowler", 2000000, "Chennai Super Kings", 2022, "Indian"], ["Munaf Patel", "Bowler", 3000000, "Gujarat Lions", 2017, "Indian"], ["Murali Kartik", "Bowler", 10000000, "Kings XI Punjab", 2014, "Indian"], ["Murali Vijay", "Batsman", 50000000, "Delhi Daredevils", 2014, "Indian"], ["Murali Vijay", "Batsman", 30000000, "Kings XI Punjab", 2015, "Indian"], ["Murali Vijay", "Batsman", 20000000, "Chennai Super Kings", 2018, "Indian"], ["Murugan Ashwin", "Bowler", 16000000, "Mumbai Indians", 2022, "Indian"], ["Mustafizur Rahman", "Bowler", 14000000, "Sunrisers Hyderabad", 2016, "Overseas"], ["Mustafizur Rahman", "Bowler", 22000000, "Mumbai Indians", 2018, "Overseas"], ["Mustafizur Rahman", "Bowler", 10000000, "Rajasthan Royals", 2021, "Overseas"], ["Mustafizur Rahman", "Bowler", 20000000, "Delhi Capitals", 2022, "Overseas"], ["Muttiah Muralitharan", "Bowler", 10000000, "Royal Challengers Bangalore", 2014, "Overseas"], ["N Jagadeesan", "Wicket Keeper", 2000000, "Chennai Super Kings", 2018, "Indian"], ["N. Jagadeesan", "Wicket Keeper", 2000000, "Chennai Super Kings", 2022, "Indian"], ["N. Tilak Varma", "All-Rounder", 17000000, "Mumbai Indians", 2022, "Indian"], ["Naman Ojha", "Wicket Keeper", 5000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Naman Ojha", "Wicket Keeper", 14000000, "Delhi Daredevils", 2018, "Indian"], ["Nathan Coulter-Nile", "Bowler", 33750000, "Mumbai Indians", 2013, "Overseas"], ["Nathan Coulter-Nile", "Bowler", 42500000, "Delhi Daredevils", 2014, "Overseas"], ["Nathan Coulter-Nile", "Bowler", 35000000, "Kolkata Knight Riders", 2017, "Overseas"], ["Nathan Coulter-Nile", "Bowler", 22000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["Nathan Coulter-Nile", "Bowler", 80000000, "Mumbai Indians", 2020, "Overseas"], ["Nathan Coulter-Nile", "Bowler", 50000000, "Mumbai Indians", 2021, "Overseas"], ["Nathan Coulter-Nile", "Bowler", 20000000, "Rajasthan Royals", 2022, "Overseas"], ["Nathan Ellis", "Bowler", 7500000, "Punjab Kings", 2022, "Overseas"], ["Nathan McCullum", "Bowler", 7500000, "Sunrisers Hyderabad", 2013, "Overseas"], ["Nathu Singh", "Bowler", 32000000, "Mumbai Indians", 2016, "Indian"], ["Nathu Singh", "Bowler", 5000000, "Gujarat Lions", 2017, "Indian"], ["Nathu Singh", "Bowler", 2000000, "Delhi Capitals", 2019, "Indian"], ["Navdeep Saini", "Bowler", 1000000, "Delhi Daredevils", 2017, "Indian"], ["Navdeep Saini", "Bowler", 30000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Navdeep Saini", "Bowler", 26000000, "Rajasthan Royals", 2022, "Indian"], ["Nic Maddinson", "Batsman", 5000000, "Royal Challengers Bangalore", 2014, "Overseas"], ["Nicolas Pooran", "Wicket Keeper", 107500000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Nicolas Pooran", "Wicket Keeper", 3000000, "Mumbai Indians", 2017, "Overseas"], ["Nicolas Pooran", "Wicket Keeper", 42000000, "Kings XI Punjab", 2019, "Overseas"], ["Nidheesh M D Dinesan", "Bowler", 2000000, "Mumbai Indians", 2018, "Indian"], ["Nikhil Shankar Naik", "Wicket Keeper", 3000000, "Kings XI Punjab", 2015, "Indian"], ["Nikhil Shankar Naik", "Wicket Keeper", 2000000, "Kolkata Knight Riders", 2019, "Indian"], ["Nikhil Shankar Naik", "Wicket Keeper", 2000000, "Kolkata Knight Riders", 2020, "Indian"], ["Nitish Rana", "All-Rounder", 1000000, "Mumbai Indians", 2015, "Indian"], ["Nitish Rana", "All-Rounder", 34000000, "Kolkata Knight Riders", 2018, "Indian"], ["Nitish Rana", "All-Rounder", 80000000, "Kolkata Knight Riders", 2022, "Indian"], ["Noor Ahmad", "Bowler", 3000000, "Gujarat Titans", 2022, "Overseas"], ["Obed Mccoy", "Bowler", 7500000, "Rajasthan Royals", 2022, "Overseas"], ["Odean Smith", "All-Rounder", 60000000, "Punjab Kings", 2022, "Overseas"], ["Oshane Thomas", "Bowler", 11000000, "Rajasthan Royals", 2019, "Overseas"], ["Oshane Thomas", "Bowler", 5000000, "Rajasthan Royals", 2020, "Overseas"], ["Pankaj Jaswal", "All-Rounder", 2000000, "Mumbai Indians", 2019, "Overseas"], ["Pankaj Singh", "Bowler", 11250000, "Royal Challengers Bangalore", 2013, "Indian"], ["Paras Dogra", "Batsman", 1000000, "Gujarat Lions", 2016, "Indian"], ["Pardeep Sahu", "All-Rounder", 1000000, "Rajasthan Royals", 2015, "Indian"], ["Pardeep Sahu", "All-Rounder", 1000000, "Kings XI Punjab", 2016, "Indian"], ["Pardeep Sahu", "Bowler", 2000000, "Kings XI Punjab", 2018, "Indian"], ["Parthiv Patel", "Wicket Keeper", 14000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Parthiv Patel", "Wicket Keeper", 17000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Parveez Rasool", "All-Rounder", 9500000, "Sunrisers Hyderabad", 2014, "Indian"], ["Parvinder Awana", "Bowler", 6500000, "Kings XI Punjab", 2014, "Indian"], ["Pat Cummins", "Bowler", 54000000, "Mumbai Indians", 2018, "Overseas"], ["Pat Cummins", "All-Rounder", 155000000, "Kolkata Knight Riders", 2020, "Overseas"], ["Pat Cummins", "All-Rounder", 72500000, "Kolkata Knight Riders", 2022, "Overseas"], ["Pat Cummins", "Bowler", 10000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Pat Cummins", "Bowler", 45000000, "Delhi Daredevils", 2017, "Overseas"], ["Pavan Deshpande", "All-Rounder", 2000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Pavan Deshpande", "All-Rounder", 2000000, "Royal Challengers Bangalore", 2020, "Indian"], ["Pawan Negi", "Bowler", 1000000, "Chennai Super Kings", 2014, "Indian"], ["Pawan Negi", "All-Rounder", 85000000, "Delhi Daredevils", 2016, "Indian"], ["Pawan Negi", "All-Rounder", 10000000, "Royal Challengers Bangalore", 2017, "Indian"], ["Pawan Negi", "All-Rounder", 10000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Pawan Negi", "All-Rounder", 5000000, "Kolkata Knight Riders", 2021, "Indian"], ["Pawan Suyal", "Bowler", 1000000, "Mumbai Indians", 2014, "Indian"], ["Pawan Suyal", "Bowler", 1000000, "Delhi Daredevils", 2016, "Indian"], ["Peter Handscomb", "Wicket Keeper", 3000000, "Rising Pune Supergiant", 2016, "Overseas"], ["Philip Hughes", "Batsman", 7500000, "Mumbai Indians", 2013, "Overseas"], ["Piyush Chawla", "Bowler", 42500000, "Kolkata Knight Riders", 2014, "Indian"], ["Piyush Chawla", "Bowler", 42000000, "Kolkata Knight Riders", 2018, "Indian"], ["Piyush Chawla", "Bowler", 67500000, "Chennai Super Kings", 2020, "Indian"], ["Piyush Chawla", "Bowler", 24000000, "Mumbai Indians", 2021, "Indian"], ["Prabhsimran Singh", "Wicket Keeper", 48000000, "Kings XI Punjab", 2019, "Indian"], ["Prabhsimran Singh", "Wicket Keeper", 5500000, "Kings XI Punjab", 2020, "Indian"], ["Prabhsimran Singh", "Wicket Keeper", 6000000, "Punjab Kings", 2022, "Indian"], ["Pradeep Sangwan", "All-Rounder", 2000000, "Gujarat Lions", 2016, "Indian"], ["Pradeep Sangwan", "Bowler", 15000000, "Mumbai Indians", 2018, "Indian"], ["Pradeep Sangwan", "All-Rounder", 2000000, "Gujarat Titans", 2022, "Indian"], ["Pragyan Ojha", "Bowler", 32500000, "Mumbai Indians", 2014, "Indian"], ["Pragyan Ojha", "Bowler", 5000000, "Mumbai Indians", 2015, "Indian"], ["Prasanth Padmanabhan", "All-Rounder", 1000000, "Sunrisers Hyderabad", 2015, "Indian"], ["Prasanth Parameswaran", "Bowler", 3000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Prashant Chopra", "Wicket Keeper", 2000000, "Rajasthan Royals", 2018, "Indian"], ["Prashant Solanki", "Bowler", 12000000, "Chennai Super Kings", 2022, "Indian"], ["Prasidh Krishna", "Bowler", 100000000, "Rajasthan Royals", 2022, "Indian"], ["Pratham Singh", "All-Rounder", 1000000, "Gujarat Lions", 2017, "Indian"], ["Pratham Singh", "Batsman", 2000000, "Kolkata Knight Riders", 2022, "Indian"], ["Pratyush Singh", "All-Rounder", 1000000, "Chennai Super Kings", 2015, "Indian"], ["Pratyush Singh", "All-Rounder", 1000000, "Delhi Daredevils", 2016, "Indian"], ["Praveen Dubey", "All-Rounder", 3500000, "Royal Challengers Bangalore", 2016, "Indian"], ["Praveen Dubey", "All-Rounder", 1000000, "Royal Challengers Bangalore", 2017, "Indian"], ["Praveen Kumar", "Bowler", 22000000, "Sunrisers Hyderabad", 2015, "Indian"], ["Praveen Kumar", "Bowler", 35000000, "Gujarat Lions", 2016, "Indian"], ["Pravin Dubey", "All-Rounder", 5000000, "Delhi Capitals", 2022, "Indian"], ["Pravin Tambe", "Bowler", 1000000, "Rajasthan Royals", 2014, "Indian"], ["Pravin Tambe", "Bowler", 2000000, "Gujarat Lions", 2016, "Indian"], ["Pravin Tambe", "Bowler", 1000000, "Sunrisers Hyderabad", 2017, "Indian"], ["Pravin Tambe", "Bowler", 2000000, "Kolkata Knight Riders", 2020, "Indian"], ["Prayas Ray Barman", "All-Rounder", 15000000, "Royal Challengers Bangalore", 2019, "Indian"], ["Prerak Mankad", "All-Rounder", 2000000, "Punjab Kings", 2022, "Indian"], ["Prince Balwant Rai Singh", "All-Rounder", 2000000, "Mumbai Indians", 2020, "Indian"], ["Prithvi Raj Yarra", "Bowler", 2000000, "Kolkata Knight Riders", 2019, "Indian"], ["Prithvi Shaw", "Batsman", 12000000, "Delhi Daredevils", 2018, "Indian"], ["Priyam Garg", "Batsman", 19000000, "Sunrisers Hyderabad", 2020, "Indian"], ["Priyam Garg", "Batsman", 2000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Quinton De Kock", "Wicket Keeper", 1500000, "Sunrisers Hyderabad", 2013, "Overseas"], ["Quinton De Kock", "Wicket Keeper", 35000000, "Delhi Daredevils", 2014, "Overseas"], ["Quinton De Kock", "Wicket Keeper", 28000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["Quinton De Kock", "Wicket Keeper", 67500000, "Lucknow Super Giants", 2022, "Overseas"], ["R Samarth", "Batsman", 2000000, "Sunrisers Hyderabad", 2022, "Indian"], ["R. Ashwin", "All-Rounder", 50000000, "Rajasthan Royals", 2022, "Indian"], ["R. Sai Kishore", "Bowler", 2000000, "Chennai Super Kings", 2020, "Indian"], ["R. Sai Kishore", "Bowler", 30000000, "Gujarat Titans", 2022, "Indian"], ["R. Sanjay Yadav", "All-Rounder", 1000000, "Kolkata Knight Riders", 2017, "Indian"], ["Rahul Ajay Tripathi", "All-Rounder", 1000000, "Rising Pune Supergiant", 2017, "Indian"], ["Rahul Buddhi", "Batsman", 2000000, "Mumbai Indians", 2022, "Indian"], ["Rahul Chahar", "Bowler", 1000000, "Rising Pune Supergiant", 2017, "Indian"], ["Rahul Chahar", "Bowler", 19000000, "Mumbai Indians", 2018, "Indian"], ["Rahul Chahar", "Bowler", 52500000, "Punjab Kings", 2022, "Indian"], ["Rahul Sharma", "Bowler", 19000000, "Delhi Daredevils", 2014, "Indian"], ["Rahul Sharma", "Bowler", 3000000, "Chennai Super Kings", 2015, "Indian"], ["Rahul Shukla", "Bowler", 4000000, "Delhi Daredevils", 2014, "Indian"], ["Rahul Tewatia", "All-Rounder", 1000000, "Rajasthan Royals", 2014, "Indian"], ["Rahul Tewatia", "All-Rounder", 2500000, "Kings XI Punjab", 2017, "Indian"], ["Rahul Tewatia", "All-Rounder", 30000000, "Delhi Daredevils", 2018, "Indian"], ["Rahul Tewatia", "All-Rounder", 90000000, "Gujarat Titans", 2022, "Indian"], ["Rahul Tripathi", "Batsman", 34000000, "Rajasthan Royals", 2018, "Indian"], ["Rahul Tripathi", "Batsman", 6000000, "Kolkata Knight Riders", 2020, "Indian"], ["Rahul Tripathi", "Batsman", 85000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Raj Angad Bawa", "All-Rounder", 20000000, "Punjab Kings", 2022, "Indian"], ["Rajagopal Sathish", "All-Rounder", 2000000, "Kolkata Knight Riders", 2016, "Indian"], ["Rajat Bhatia", "All-Rounder", 17000000, "Rajasthan Royals", 2014, "Indian"], ["Rajat Bhatia", "All-Rounder", 6000000, "Rising Pune Supergiant", 2016, "Indian"], ["Rajat Patidar", "Batsman", 2000000, "Royal Challengers Bangalore", 2021, "Indian"], ["Rajvardhan Hangargekar", "All-Rounder", 15000000, "Chennai Super Kings", 2022, "Indian"], ["Ramandeep Singh", "All-Rounder", 2000000, "Mumbai Indians", 2022, "Indian"], ["Ramesh Kumar", "Batsman", 2000000, "Kolkata Knight Riders", 2022, "Indian"], ["Ranganath Vinay Kumar", "Bowler", 28000000, "Kolkata Knight Riders", 2014, "Indian"], ["Ranganath Vinay Kumar", "Bowler", 10000000, "Kolkata Knight Riders", 2018, "Indian"], ["Rashid Khan Arman", "Bowler", 40000000, "Sunrisers Hyderabad", 2017, "Overseas"], ["Rashid Khan Arman", "Bowler", 90000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Rasikh Dar", "Bowler", 2000000, "Mumbai Indians", 2019, "Indian"], ["Rasikh Dar", "Bowler", 2000000, "Kolkata Knight Riders", 2022, "Indian"], ["Rassie Van Der Dussen", "Batsman", 10000000, "Rajasthan Royals", 2022, "Overseas"], ["Ravi Bishnoi", "Bowler", 20000000, "Kings XI Punjab", 2020, "Indian"], ["Ravi Bopara", "All-Rounder", 10000000, "Sunrisers Hyderabad", 2015, "Indian"], ["Ravi Rampaul", "Bowler", 21750000, "Royal Challengers Bangalore", 2013, "Overseas"], ["Ravi Rampaul", "Bowler", 9000000, "Royal Challengers Bangalore", 2014, "Overseas"], ["Ravichandran Ashwin", "All-Rounder", 76000000, "Kings XI Punjab", 2018, "Overseas"], ["Ricky Bhui", "Batsman", 1000000, "Sunrisers Hyderabad", 2014, "Overseas"], ["Ricky Bhui", "Batsman", 2000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Ricky Ponting", "Batsman", 30000000, "Mumbai Indians", 2013, "Overseas"], ["Riley Meredith", "Bowler", 80000000, "Punjab Kings", 2021, "Overseas"], ["Riley Meredith", "Bowler", 10000000, "Mumbai Indians", 2022, "Overseas"], ["Rinku Singh", "Batsman", 1000000, "Kings XI Punjab", 2017, "Indian"], ["Rinku Singh", "Batsman", 8000000, "Kolkata Knight Riders", 2018, "Indian"], ["Rinku Singh", "Batsman", 5500000, "Kolkata Knight Riders", 2022, "Indian"], ["Ripal Patel", "All-Rounder", 2000000, "Delhi Capitals", 2021, "Indian"], ["Ripal Patel", "All-Rounder", 2000000, "Delhi Capitals", 2022, "Indian"], ["Rishabh Pant", "Wicket Keeper", 19000000, "Delhi Daredevils", 2016, "Indian"], ["Rishi Dhawan", "All-Rounder", 30000000, "Kings XI Punjab", 2014, "Indian"], ["Rishi Dhawan", "All-Rounder", 5500000, "Kolkata Knight Riders", 2017, "Indian"], ["Rishi Dhawan", "All-Rounder", 5500000, "Punjab Kings", 2022, "Indian"], ["Riyan Parag", "All-Rounder", 2000000, "Rajasthan Royals", 2019, "Indian"], ["Riyan Parag", "All-Rounder", 38000000, "Rajasthan Royals", 2022, "Indian"], ["Robin Uthappa", "Batsman", 50000000, "Kolkata Knight Riders", 2014, "Indian"], ["Robin Uthappa", "Batsman", 64000000, "Kolkata Knight Riders", 2018, "Indian"], ["Robin Uthappa", "Batsman", 30000000, "Rajasthan Royals", 2020, "Indian"], ["Robin Uthappa", "Batsman", 20000000, "Chennai Super Kings", 2022, "Indian"], ["Romario Shepherd", "All-Rounder", 77500000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Ronit More", "Bowler", 1000000, "Chennai Super Kings", 2014, "Indian"], ["Ross Taylor", "Batsman", 20000000, "Delhi Daredevils", 2014, "Overseas"], ["Rovman Powell", "All-Rounder", 3000000, "Kolkata Knight Riders", 2017, "Overseas"], ["Rovman Powell", "Batsman", 28000000, "Delhi Capitals", 2022, "Overseas"], ["Rudra Pratap Singh", "Bowler", 30000000, "Royal Challengers Bangalore", 2013, "Indian"], ["Rudra Pratap Singh", "Bowler", 3000000, "Rising Pune Supergiant", 2016, "Indian"], ["Ruturaj Gaikwad", "Batsman", 2000000, "Chennai Super Kings", 2019, "Indian"], ["Ryan McLaren", "Bowler", 3750000, "Kolkata Knight Riders", 2013, "Overseas"], ["Ryan Ten Doeschate", "All-Rounder", 10000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Sachin Baby", "Batsman", 1000000, "Royal Challengers Bangalore", 2016, "Indian"], ["Sachin Baby", "Batsman", 2000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Sachin Baby", "Batsman", 2000000, "Royal Challengers Bangalore", 2021, "Indian"], ["Sachin Rana", "Bowler", 2000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Sachithra Senanayaka", "All-Rounder", 46875000, "Kolkata Knight Riders", 2013, "Overseas"], ["Sagar Trivedi", "All-Rounder", 1000000, "Rajasthan Royals", 2015, "Indian"], ["Sam Billings", "Wicket Keeper", 3000000, "Delhi Daredevils", 2016, "Overseas"], ["Sam Billings", "Wicket Keeper", 10000000, "Chennai Super Kings", 2018, "Overseas"], ["Sam Billings", "Wicket Keeper", 20000000, "Delhi Capitals", 2021, "Overseas"], ["Sam Billings", "Wicket Keeper", 20000000, "Kolkata Knight Riders", 2022, "Overseas"], ["Sam Curran", "All-Rounder", 72000000, "Kings XI Punjab", 2019, "Overseas"], ["Sam Curran", "All-Rounder", 55000000, "Chennai Super Kings", 2020, "Overseas"], ["Samuel Badree", "Bowler", 3000000, "Chennai Super Kings", 2014, "Overseas"], ["Samuel Badree", "Bowler", 5000000, "Royal Challengers Bangalore", 2016, "Overseas"], ["Sandeep Bavanaka", "All-Rounder", 2000000, "Sunrisers Hyderabad", 2020, "Overseas"], ["Sandeep Lamichhane", "Bowler", 2000000, "Delhi Daredevils", 2018, "Overseas"], ["Sandeep Sharma", "Bowler", 8500000, "Kings XI Punjab", 2014, "Indian"], ["Sandeep Sharma", "Bowler", 30000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Sandeep Sharma", "Bowler", 5000000, "Punjab Kings", 2022, "Indian"], ["Sandeep Warrier", "Bowler", 1000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Sanjay Yadav", "All-Rounder", 2000000, "Sunrisers Hyderabad", 2020, "Indian"], ["Sanjay Yadav", "All-Rounder", 5000000, "Mumbai Indians", 2022, "Indian"], ["Sanju Samson", "Wicket Keeper", 42000000, "Delhi Daredevils", 2016, "Indian"], ["Sanju Samson", "Wicket Keeper", 80000000, "Rajasthan Royals", 2018, "Indian"], ["Sarabjit Ladda", "Bowler", 1000000, "Gujarat Lions", 2016, "Indian"], ["Sarfaraz Khan", "All-Rounder", 2000000, "Delhi Capitals", 2022, "Indian"], ["Sarfaraz Naushad Khan", "Batsman", 5000000, "Royal Challengers Bangalore", 2015, "Indian"], ["Sarfaraz Naushad Khan", "All-Rounder", 2500000, "Kings XI Punjab", 2019, "Indian"], ["Saurabh Dubey", "Bowler", 2000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Saurabh Kumar", "Bowler", 1000000, "Rising Pune Supergiant", 2017, "Indian"], ["Saurabh Kumar", "All-Rounder", 2000000, "Punjab Kings", 2021, "Indian"], ["Saurabh Tiwary", "Batsman", 7000000, "Delhi Daredevils", 2014, "Indian"], ["Saurabh Tiwary", "Batsman", 3000000, "Mumbai Indians", 2017, "Indian"], ["Saurabh Tiwary", "Batsman", 8000000, "Mumbai Indians", 2018, "Indian"], ["Saurabh Tiwary", "Batsman", 5000000, "Mumbai Indians", 2020, "Indian"], ["Sayan Ghosh", "Bowler", 1000000, "Kolkata Knight Riders", 2017, "Indian"], ["Sayan Ghosh", "Bowler", 2000000, "Delhi Daredevils", 2018, "Indian"], ["Sayan Sekhar Mandal", "All-Rounder", 1000000, "Kolkata Knight Riders", 2014, "Indian"], ["Scott Boland", "Bowler", 5000000, "Rising Pune Supergiant", 2016, "Overseas"], ["Sean Abbott", "Bowler", 10000000, "Royal Challengers Bangalore", 2015, "Overseas"], ["Sean Abbott", "Bowler", 24000000, "Sunrisers Hyderabad", 2022, "Overseas"], ["Shadab Jakati", "Bowler", 2000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Shadab Jakati", "All-Rounder", 2000000, "Gujarat Lions", 2016, "Indian"], ["Shahbaz Ahamad", "Wicket Keeper", 2000000, "Royal Challengers Bangalore", 2020, "Indian"], ["Shahbaz Ahamad", "All-Rounder", 24000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Shahbaz Nadeem", "Bowler", 8500000, "Delhi Daredevils", 2014, "Indian"], ["Shahbaz Nadeem", "Bowler", 32000000, "Delhi Daredevils", 2018, "Indian"], ["Shahbaz Nadeem", "Bowler", 5000000, "Lucknow Super Giants", 2022, "Indian"], ["Shahrukh Khan", "All-Rounder", 52500000, "Punjab Kings", 2021, "Indian"], ["Shahrukh Khan", "All-Rounder", 90000000, "Punjab Kings", 2022, "Indian"], ["Shakib Al Hasan", "All-Rounder", 28000000, "Kolkata Knight Riders", 2014, "Overseas"], ["Shakib Al Hasan", "All-Rounder", 20000000, "Sunrisers Hyderabad", 2018, "Overseas"], ["Shakib Al Hasan", "All-Rounder", 32000000, "Kolkata Knight Riders", 2021, "Overseas"], ["Shane Watson", "All-Rounder", 95000000, "Royal Challengers Bangalore", 2016, "Overseas"], ["Shane Watson", "All-Rounder", 40000000, "Chennai Super Kings", 2018, "Overseas"], ["Sharad Lumba", "Batsman", 2000000, "Mumbai Indians", 2018, "Indian"], ["Shardul Thakur", "Bowler", 2000000, "Kings XI Punjab", 2014, "Indian"], ["Shardul Thakur", "Bowler", 26000000, "Chennai Super Kings", 2018, "Indian"], ["Shardul Thakur", "Bowler", 107500000, "Delhi Capitals", 2022, "Indian"], ["Shashank Singh", "All-Rounder", 1000000, "Delhi Daredevils", 2017, "Indian"], ["Shashank Singh", "All-Rounder", 3000000, "Rajasthan Royals", 2019, "Indian"], ["Shashank Singh", "All-Rounder", 2000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Shaun Marsh", "Batsman", 22000000, "Kings XI Punjab", 2014, "Overseas"], ["Sheldon Cottrell", "Bowler", 85000000, "Kings XI Punjab", 2020, "Overseas"], ["Sheldon Jackson", "Batsman", 1500000, "Kolkata Knight Riders", 2015, "Indian"], ["Sheldon Jackson", "Wicket Keeper", 2000000, "Kolkata Knight Riders", 2021, "Indian"], ["Sheldon Jackson", "Wicket Keeper", 6000000, "Kolkata Knight Riders", 2022, "Indian"], ["Shelley Shaurya", "Bowler", 1000000, "Gujarat Lions", 2017, "Indian"], ["Sherfane Rutherford", "All-Rounder", 20000000, "Delhi Capitals", 2019, "Overseas"], ["Sherfane Rutherford", "All-Rounder", 10000000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Shikhar Dhawan", "Batsman", 52000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Shikhar Dhawan", "Batsman", 82500000, "Punjab Kings", 2022, "Indian"], ["Shimron Hetmyer", "Batsman", 42000000, "Royal Challengers Bangalore", 2019, "Overseas"], ["Shimron Hetmyer", "Batsman", 77500000, "Delhi Capitals", 2020, "Overseas"], ["Shimron Hetmyer", "Batsman", 85000000, "Rajasthan Royals", 2022, "Overseas"], ["Shishir Bhavane", "Batsman", 1000000, "Royal Challengers Bangalore", 2015, "Indian"], ["Shivam Dube", "All-Rounder", 50000000, "Royal Challengers Bangalore", 2019, "Indian"], ["Shivam Dube", "All-Rounder", 44000000, "Rajasthan Royals", 2021, "Indian"], ["Shivam Dube", "All-Rounder", 40000000, "Chennai Super Kings", 2022, "Indian"], ["Shivam Mavi", "All-Rounder", 30000000, "Kolkata Knight Riders", 2018, "Indian"], ["Shivam Mavi", "All-Rounder", 72500000, "Kolkata Knight Riders", 2022, "Indian"], ["Shivam Sharma", "Bowler", 1000000, "Kings XI Punjab", 2014, "Indian"], ["Shivil Kaushik", "Bowler", 1000000, "Gujarat Lions", 2016, "Indian"], ["Shreevats Goswami", "Wicket Keeper", 10000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Shreyas Gopal", "Bowler", 1000000, "Mumbai Indians", 2014, "Indian"], ["Shreyas Gopal", "All-Rounder", 2000000, "Rajasthan Royals", 2018, "Indian"], ["Shreyas Gopal", "Bowler", 7500000, "Sunrisers Hyderabad", 2022, "Indian"], ["Shreyas Iyer", "Batsman", 26000000, "Delhi Daredevils", 2015, "Indian"], ["Shreyas Iyer", "Batsman", 122500000, "Kolkata Knight Riders", 2022, "Indian"], ["Shrikant Mundhe", "All-Rounder", 2000000, "Kolkata Knight Riders", 2019, "Indian"], ["Shubam Agrawal", "All-Rounder", 1000000, "Gujarat Lions", 2017, "Indian"], ["Shubham Garhwal", "All-Rounder", 2000000, "Rajasthan Royals", 2022, "Indian"], ["Shubham Ranjane", "All-Rounder", 2000000, "Rajasthan Royals", 2019, "Indian"], ["Shubman Gill", "Batsman", 18000000, "Kolkata Knight Riders", 2018, "Indian"], ["Siddarth Kaul", "Bowler", 4500000, "Delhi Daredevils", 2014, "Indian"], ["Siddarth Kaul", "Bowler", 1000000, "Sunrisers Hyderabad", 2015, "Indian"], ["Siddarth Kaul", "Bowler", 38000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Siddharth Kaul", "Bowler", 7500000, "Royal Challengers Bangalore", 2022, "Indian"], ["Siddhesh Dinesh Lad", "All-Rounder", 1000000, "Mumbai Indians", 2015, "Indian"], ["Siddhesh Dinesh Lad", "Batsman", 2000000, "Mumbai Indians", 2018, "Indian"], ["Simarjeet Singh", "Bowler", 2000000, "Chennai Super Kings", 2022, "Indian"], ["Srikkanth Anirudha", "Batsman", 2000000, "Sunrisers Hyderabad", 2014, "Indian"], ["Steven Smith", "All-Rounder", 40000000, "Rajasthan Royals", 2014, "Overseas"], ["Steven Smith", "Batsman", 22000000, "Delhi Capitals", 2021, "Overseas"], ["Stuart Binny", "All-Rounder", 20000000, "Royal Challengers Bangalore", 2016, "Indian"], ["Stuart Binny", "All-Rounder", 5000000, "Rajasthan Royals", 2018, "Indian"], ["Subhranshu Senapati", "Batsman", 2000000, "Chennai Super Kings", 2022, "Indian"], ["Subramaniam Badrinath", "Batsman", 3000000, "Royal Challengers Bangalore", 2015, "Indian"], ["Sudeep Tyagi", "Bowler", 7500000, "Sunrisers Hyderabad", 2013, "Indian"], ["Sumit Narwal", "All-Rounder", 1000000, "Kolkata Knight Riders", 2015, "Indian"], ["Suryakumar Yadav", "Batsman", 7000000, "Kolkata Knight Riders", 2014, "Indian"], ["Suryakumar Yadav", "Batsman", 32000000, "Mumbai Indians", 2018, "Indian"], ["Sushant Marathe", "Wicket Keeper", 1000000, "Mumbai Indians", 2014, "Indian"], ["Suyash Prabhudesai", "All-Rounder", 2000000, "Royal Challengers Bangalore", 2021, "Indian"], ["Suyash Prabhudessai", "All-Rounder", 3000000, "Royal Challengers Bangalore", 2022, "Indian"], ["Swapnil Singh", "All-Rounder", 1000000, "Kings XI Punjab", 2016, "Indian"], ["Syed Khaleel Ahmed", "All-Rounder", 1000000, "Delhi Daredevils", 2016, "Indian"], ["Syed Khaleel Ahmed", "Bowler", 30000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Syed Khaleel Ahmed", "Bowler", 52500000, "Delhi Capitals", 2022, "Indian"], ["Syed Mehdi Hasan", "All-Rounder", 2000000, "Sunrisers Hyderabad", 2018, "Indian"], ["T Natarajan", "Bowler", 30000000, "Kings XI Punjab", 2017, "Indian"], ["T Natarajan", "Bowler", 4000000, "Sunrisers Hyderabad", 2018, "Indian"], ["T. Natarajan", "Bowler", 40000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Tajinder Dhillon", "All-Rounder", 5500000, "Mumbai Indians", 2018, "Indian"], ["Tajinder Dhillon", "All-Rounder", 2000000, "Kings XI Punjab", 2020, "Indian"], ["Tanmay Agarwal", "Batsman", 1000000, "Sunrisers Hyderabad", 2017, "Indian"], ["Tanmay Agarwal", "Batsman", 2000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Tanmay Mishra", "Batsman", 1000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Tejas Baroka", "Bowler", 2000000, "Rajasthan Royals", 2022, "Indian"], ["Tejas Singh Baroka", "Bowler", 1000000, "Gujarat Lions", 2017, "Indian"], ["Thisara Perera", "All-Rounder", 50625000, "Sunrisers Hyderabad", 2013, "Overseas"], ["Thisara Perera", "All-Rounder", 16000000, "Kings XI Punjab", 2014, "Overseas"], ["Thisara Perera", "All-Rounder", 10000000, "Rising Pune Supergiant", 2016, "Overseas"], ["Tim David", "All-Rounder", 82500000, "Mumbai Indians", 2022, "Overseas"], ["Tim Seifert", "Wicket Keeper", 5000000, "Delhi Capitals", 2022, "Overseas"], ["Tim Southee", "Bowler", 12000000, "Rajasthan Royals", 2014, "Overseas"], ["Tim Southee", "Bowler", 25000000, "Mumbai Indians", 2016, "Overseas"], ["Tim Southee", "Bowler", 10000000, "Royal Challengers Bangalore", 2018, "Overseas"], ["Tim Southee", "Bowler", 15000000, "Kolkata Knight Riders", 2022, "Overseas"], ["Tirumalasetti Suman", "Batsman", 1000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Tom Banton", "Batsman", 10000000, "Kolkata Knight Riders", 2020, "Overseas"], ["Tom Curran", "All-Rounder", 10000000, "Rajasthan Royals", 2020, "Overseas"], ["Tom Curran", "All-Rounder", 52500000, "Delhi Capitals", 2021, "Overseas"], ["Travis Head", "Batsman", 3000000, "Delhi Daredevils", 2015, "Overseas"], ["Travis Head", "Batsman", 5000000, "Royal Challengers Bangalore", 2016, "Overseas"], ["Trent Boult", "Bowler", 38000000, "Sunrisers Hyderabad", 2015, "Overseas"], ["Trent Boult", "Bowler", 50000000, "Kolkata Knight Riders", 2017, "Overseas"], ["Trent Boult", "Bowler", 22000000, "Delhi Daredevils", 2018, "Overseas"], ["Trent Boult", "Bowler", 80000000, "Rajasthan Royals", 2022, "Overseas"], ["Tushar Deshpande", "Bowler", 2000000, "Delhi Capitals", 2020, "Indian"], ["Tushar Deshpande", "Bowler", 2000000, "Chennai Super Kings", 2022, "Indian"], ["Tymal Mills", "Bowler", 120000000, "Royal Challengers Bangalore", 2017, "Overseas"], ["Tymal Mills", "Bowler", 15000000, "Mumbai Indians", 2022, "Overseas"], ["Umang Sharma", "Batsman", 1000000, "Gujarat Lions", 2016, "Indian"], ["Umesh Yadav", "Bowler", 26000000, "Kolkata Knight Riders", 2014, "Indian"], ["Umesh Yadav", "Bowler", 42000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Umesh Yadav", "Bowler", 10000000, "Delhi Capitals", 2021, "Indian"], ["Umesh Yadav", "Bowler", 20000000, "Kolkata Knight Riders", 2022, "Indian"], ["Unmukt Chand", "Batsman", 6500000, "Rajasthan Royals", 2014, "Indian"], ["Utkarsh Singh", "All-Rounder", 2000000, "Punjab Kings", 2021, "Indian"], ["Vaibhav Arora", "Bowler", 2000000, "Kolkata Knight Riders", 2021, "Indian"], ["Vaibhav Arora", "Bowler", 20000000, "Punjab Kings", 2022, "Indian"], ["Vaibhav Rawal", "All-Rounder", 1000000, "Kolkata Knight Riders", 2015, "Indian"], ["Varun Aaron", "Bowler", 20000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Varun Aaron", "Bowler", 28000000, "Kings XI Punjab", 2017, "Indian"], ["Varun Aaron", "Bowler", 24000000, "Rajasthan Royals", 2019, "Indian"], ["Varun Aaron", "Bowler", 5000000, "Gujarat Titans", 2022, "Indian"], ["Varun Chakaravarthy", "All-Rounder", 84000000, "Kings XI Punjab", 2019, "Indian"], ["Varun Chakaravarthy", "All-Rounder", 40000000, "Kolkata Knight Riders", 2020, "Indian"], ["Veer Pratap Singh", "Bowler", 4000000, "Kolkata Knight Riders", 2014, "Indian"], ["Venkatesh Iyer", "All-Rounder", 2000000, "Kolkata Knight Riders", 2021, "Indian"], ["Venugopal Rao", "Batsman", 5500000, "Sunrisers Hyderabad", 2014, "Indian"], ["Vicky Ostwal", "All-Rounder", 2000000, "Delhi Capitals", 2022, "Indian"], ["Vijay Shankar", "All-Rounder", 1000000, "Chennai Super Kings", 2014, "Indian"], ["Vijay Shankar", "All-Rounder", 3500000, "Sunrisers Hyderabad", 2016, "Indian"], ["Vijay Shankar", "All-Rounder", 32000000, "Delhi Daredevils", 2018, "Indian"], ["Vijay Shankar", "All-Rounder", 14000000, "Gujarat Titans", 2022, "Indian"], ["Vijay Zol", "Batsman", 3000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Vikas Tokas", "Bowler", 1000000, "Royal Challengers Bangalore", 2016, "Indian"], ["Vikramjeet Malik", "Bowler", 2000000, "Rajasthan Royals", 2014, "Indian"], ["Vikramjeet Malik", "Bowler", 2000000, "Royal Challengers Bangalore", 2016, "Indian"], ["Virat Singh", "Batsman", 19000000, "Sunrisers Hyderabad", 2020, "Indian"], ["Virender Sehwag", "Batsman", 32000000, "Kings XI Punjab", 2014, "Indian"], ["Vishnu Vinod", "Wicket Keeper", 2000000, "Delhi Capitals", 2021, "Indian"], ["Vishnu Vinod", "Wicket Keeper", 5000000, "Sunrisers Hyderabad", 2022, "Indian"], ["Wanindu Hasaranga", "All-Rounder", 107500000, "Royal Challengers Bangalore", 2022, "Overseas"], ["Washington Sundar", "All-Rounder", 87500000, "Sunrisers Hyderabad", 2022, "Indian"], ["Wayne Parnell", "Bowler", 10000000, "Delhi Daredevils", 2014, "Overseas"], ["Wriddhiman Saha", "Wicket Keeper", 22000000, "Kings XI Punjab", 2014, "Indian"], ["Wriddhiman Saha", "Wicket Keeper", 50000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Wriddhiman Saha", "Wicket Keeper", 12000000, "Sunrisers Hyderabad", 2019, "Indian"], ["Wriddhiman Saha", "Wicket Keeper", 19000000, "Gujarat Titans", 2022, "Indian"], ["Writtick Chatterjee", "All-Rounder", 2000000, "Punjab Kings", 2022, "Indian"], ["Yash Dayal", "Bowler", 32000000, "Gujarat Titans", 2022, "Indian"], ["Yash Dhull", "All-Rounder", 5000000, "Delhi Capitals", 2022, "Indian"], ["Yashasvi Jaiswal", "All-Rounder", 24000000, "Rajasthan Royals", 2020, "Indian"], ["Yogesh Gowalkar", "All-Rounder", 1000000, "Kings XI Punjab", 2015, "Indian"], ["Yogesh Takawale", "Wicket Keeper", 1000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Yudhvir Charak", "All-Rounder", 2000000, "Mumbai Indians", 2021, "Indian"], ["Yusuf Pathan", "All-Rounder", 32500000, "Kolkata Knight Riders", 2014, "Indian"], ["Yusuf Pathan", "All-Rounder", 19000000, "Sunrisers Hyderabad", 2018, "Indian"], ["Yuvraj Singh", "All-Rounder", 140000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Yuvraj Singh", "Batsman", 160000000, "Delhi Daredevils", 2015, "Indian"], ["Yuvraj Singh", "All-Rounder", 70000000, "Sunrisers Hyderabad", 2016, "Indian"], ["Yuvraj Singh", "All-Rounder", 20000000, "Kings XI Punjab", 2018, "Indian"], ["Yuvraj Singh", "All-Rounder", 10000000, "Mumbai Indians", 2019, "Indian"], ["Yuzvendra Chahal", "Bowler", 65000000, "Rajasthan Royals", 2022, "Indian"], ["Yuzvendra Singh Chahal", "Bowler", 1000000, "Royal Challengers Bangalore", 2014, "Indian"], ["Yuzvendra Singh Chahal", "Bowler", 60000000, "Royal Challengers Bangalore", 2018, "Indian"], ["Zaheer Khan", "Bowler", 26000000, "Mumbai Indians", 2014, "Indian"], ["Zaheer Khan", "Bowler", 40000000, "Delhi Daredevils", 2015, "Indian"], ["Zahir Khan Pakteen", "Bowler", 6000000, "Rajasthan Royals", 2018, "Indian"]];
+
+const [PLAYER,ROLE,AMOUNT,TEAM,YEAR,ORIGIN] = [0,1,2,3,4,5];
+const teams = [...new Set(AUCTION_DATA.map(r=>r[TEAM]))].sort();
+const years = [...new Set(AUCTION_DATA.map(r=>r[YEAR]))].sort((a,b)=>a-b);
+const roles = [...new Set(AUCTION_DATA.map(r=>r[ROLE]))].sort();
+
+const ROLE_COLORS = {
+  'Batsman':'#378ADD','Bowler':'#D85A30','All-Rounder':'#1D9E75','Wicket Keeper':'#D4A72C'
+};
+
+function fmtCr(amount){
+  return '\u20B9' + (amount/10000000).toFixed(2) + 'Cr';
+}
+function fmtCrShort(amount){
+  const cr = amount/10000000;
+  return cr>=1 ? '\u20B9'+cr.toFixed(1)+'Cr' : '\u20B9'+(amount/100000).toFixed(0)+'L';
+}
+
+const fYear = document.getElementById('fYear');
+const fTeam = document.getElementById('fTeam');
+const fRole = document.getElementById('fRole');
+years.forEach(y=>fYear.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`));
+teams.forEach(t=>fTeam.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`));
+roles.forEach(r=>fRole.insertAdjacentHTML('beforeend', `<option value="${r}">${r}</option>`));
+
+let teamChart, roleChart, yearChart;
+
+function getFiltered(){
+  const y = fYear.value, t = fTeam.value, r = fRole.value;
+  return AUCTION_DATA.filter(row =>
+    (!y || String(row[YEAR])===y) &&
+    (!t || row[TEAM]===t) &&
+    (!r || row[ROLE]===r)
+  );
+}
+
+function renderKPIs(data){
+  const total = data.reduce((s,r)=>s+r[AMOUNT],0);
+  const avg = data.length ? total/data.length : 0;
+  const teamsInvolved = new Set(data.map(r=>r[TEAM])).size;
+  const top = data.length ? data.reduce((a,b)=>a[AMOUNT]>b[AMOUNT]?a:b) : null;
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total spend</div><div class="kpi-val">${fmtCr(total)}</div></div>
+    <div class="kpi"><div class="kpi-label">Players bought</div><div class="kpi-val">${data.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Avg. price</div><div class="kpi-val">${fmtCr(avg)}</div></div>
+    <div class="kpi"><div class="kpi-label">Highest buy</div><div class="kpi-val">${top?fmtCr(top[AMOUNT]):'—'}<br><small>${top?top[PLAYER]:''}</small></div></div>
+  `;
+  document.getElementById('scopeCount').textContent = data.length;
+}
+
+function renderTeamChart(data){
+  const totals = {};
+  teams.forEach(t=>totals[t]=0);
+  data.forEach(r=>{ totals[r[TEAM]] += r[AMOUNT]; });
+  const sorted = teams.filter(t=>!fTeam.value || t===fTeam.value)
+    .map(t=>({t,v:totals[t]})).sort((a,b)=>b.v-a.v).filter(x=>x.v>0 || !fTeam.value);
+  const labels = sorted.map(x=>x.t);
+  const values = sorted.map(x=>x.v/10000000);
+
+  if(teamChart) teamChart.destroy();
+  teamChart = new Chart(document.getElementById('teamChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Total spend (Cr)', data: values, backgroundColor:'#D4A72C', borderRadius:3, maxBarThickness:28 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> '\u20B9'+c.parsed.y.toFixed(2)+' Cr' } } },
+      scales:{
+        x:{ ticks:{ color:'#93A0BE', maxRotation:60, minRotation:60, autoSkip:false, font:{size:10} }, grid:{ display:false } },
+        y:{ ticks:{ color:'#93A0BE', callback:(v)=>'\u20B9'+v+'Cr' }, grid:{ color:'#2A3450' } }
+      }
+    }
+  });
+}
+
+function renderRoleChart(data){
+  const scope = fTeam.value ? [fTeam.value] : teams;
+  const totals = {};
+  scope.forEach(t=>{ totals[t]={}; roles.forEach(r=>totals[t][r]=0); });
+  data.forEach(r=>{ if(totals[r[TEAM]]) totals[r[TEAM]][r[ROLE]] += r[AMOUNT]; });
+
+  const teamOrder = scope.map(t=>({t, total: roles.reduce((s,r)=>s+totals[t][r],0)}))
+    .sort((a,b)=>b.total-a.total).map(x=>x.t);
+
+  const pctDatasets = roles.map(role => ({
+    label: role,
+    data: teamOrder.map(t => {
+      const tot = roles.reduce((s,r)=>s+totals[t][r],0);
+      return tot ? +(100*totals[t][role]/tot).toFixed(1) : 0;
+    }),
+    backgroundColor: ROLE_COLORS[role],
+    stack: 'x'
+  }));
+
+  document.getElementById('roleLegend').innerHTML = roles.map(r=>
+    `<span><span class="sw" style="background:${ROLE_COLORS[r]}"></span>${r}</span>`
+  ).join('');
+
+  if(roleChart) roleChart.destroy();
+  roleChart = new Chart(document.getElementById('roleChart'), {
+    type:'bar',
+    data:{ labels: teamOrder, datasets: pctDatasets },
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': '+c.parsed.x+'%' } } },
+      scales:{
+        x:{ stacked:true, max:100, ticks:{ color:'#93A0BE', callback:(v)=>v+'%' }, grid:{ color:'#2A3450' } },
+        y:{ stacked:true, ticks:{ color:'#93A0BE', font:{size:10} }, grid:{ display:false } }
+      }
+    }
+  });
+}
+
+function renderYearChart(data){
+  const scopeYears = fYear.value ? [Number(fYear.value)] : years;
+  const totals = {}; scopeYears.forEach(y=>totals[y]=0);
+  data.forEach(r=>{ if(totals[r[YEAR]]!==undefined) totals[r[YEAR]] += r[AMOUNT]; });
+  const labels = scopeYears;
+  const values = scopeYears.map(y=>totals[y]/10000000);
+
+  if(yearChart) yearChart.destroy();
+  yearChart = new Chart(document.getElementById('yearChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Season spend (Cr)', data: values, borderColor:'#2BA88F', backgroundColor:'rgba(43,168,143,.1)', fill:true, tension:.3, pointRadius:4, pointBackgroundColor:'#2BA88F', borderWidth:2 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> '\u20B9'+c.parsed.y.toFixed(2)+' Cr' } } },
+      scales:{
+        x:{ ticks:{ color:'#93A0BE' }, grid:{ display:false } },
+        y:{ ticks:{ color:'#93A0BE', callback:(v)=>'\u20B9'+v+'Cr' }, grid:{ color:'#2A3450' } }
+      }
+    }
+  });
+}
+
+function renderTopBuys(data){
+  const top = [...data].sort((a,b)=>b[AMOUNT]-a[AMOUNT]).slice(0,10);
+  const tbody = document.querySelector('#topBuysTable tbody');
+  if(!top.length){
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">No auction records match this filter.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = top.map(r => `
+    <tr>
+      <td>${r[PLAYER]}</td>
+      <td>${r[TEAM]}</td>
+      <td>${r[YEAR]}</td>
+      <td><span class="pill">${r[ROLE]}</span></td>
+      <td class="amt">${fmtCr(r[AMOUNT])}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAll(){
+  const data = getFiltered();
+  renderKPIs(data);
+  renderTeamChart(data);
+  renderRoleChart(data);
+  renderYearChart(data);
+  renderTopBuys(data);
+}
+
+[fYear, fTeam, fRole].forEach(el => el.addEventListener('change', renderAll));
+document.getElementById('resetBtn').addEventListener('click', () => {
+  fYear.value=''; fTeam.value=''; fRole.value='';
+  renderAll();
+});
+
+renderAll();
+
+/* ============================================================
+   04 — Player auction history search
+   ============================================================ */
+const playerRecords = {};
+AUCTION_DATA.forEach(r=>{
+  if(!playerRecords[r[PLAYER]]) playerRecords[r[PLAYER]] = [];
+  playerRecords[r[PLAYER]].push(r);
+});
+Object.values(playerRecords).forEach(arr=>arr.sort((a,b)=>a[YEAR]-b[YEAR]));
+// Every player who appears at least once — not just repeat buys — is searchable.
+const searchablePlayers = Object.keys(playerRecords).sort();
+const repeatCount = searchablePlayers.filter(p=>playerRecords[p].length>=2).length;
+
+searchablePlayers.forEach(p=> document.getElementById('playerList').insertAdjacentHTML('beforeend', `<option value="${p}"></option>`));
+document.getElementById('searchHint').textContent = `${searchablePlayers.length} players total in this dataset (${repeatCount} bought 2+ times). Note: players a franchise retained every season — e.g. MS Dhoni, Virat Kohli, Rohit Sharma — never re-entered the open auction, so they have no auction records here at all.`;
+
+let playerChart;
+function renderPlayerResult(player){
+  const recs = playerRecords[player];
+  const container = document.getElementById('playerResult');
+
+  if(recs.length === 1){
+    const r = recs[0];
+    container.innerHTML = `
+      <table>
+        <thead><tr><th>Season</th><th>Team</th><th>Role</th><th style="text-align:right;">Price</th></tr></thead>
+        <tbody><tr><td>${r[YEAR]}</td><td>${r[TEAM]}</td><td><span class="pill">${r[ROLE]}</span></td><td class="amt">${fmtCr(r[AMOUNT])}</td></tr></tbody>
+      </table>
+      <div class="insight">Only one auction record for this player in the dataset — bought once in ${r[YEAR]} and either retained afterward or not re-auctioned within 2013–2022, so there's no trajectory to chart.</div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="position:relative;height:260px;margin-bottom:14px;">
+      <canvas id="playerChart"></canvas>
+    </div>
+    <table>
+      <thead><tr><th>Season</th><th>Team</th><th>Role</th><th style="text-align:right;">Price</th></tr></thead>
+      <tbody>
+        ${recs.map(r=>`<tr><td>${r[YEAR]}</td><td>${r[TEAM]}</td><td><span class="pill">${r[ROLE]}</span></td><td class="amt">${fmtCr(r[AMOUNT])}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="insight">Peak price <b>${fmtCr(Math.max(...recs.map(r=>r[AMOUNT])))}</b> · Lowest price <b>${fmtCr(Math.min(...recs.map(r=>r[AMOUNT])))}</b> · ${recs.length} auctions across ${new Set(recs.map(r=>r[TEAM])).size} franchise(s) from ${recs[0][YEAR]} to ${recs[recs.length-1][YEAR]}.</div>
+  `;
+  if(playerChart) playerChart.destroy();
+  playerChart = new Chart(document.getElementById('playerChart'), {
+    type:'line',
+    data:{
+      labels: recs.map(r=>r[YEAR]),
+      datasets:[{
+        label: player, data: recs.map(r=>r[AMOUNT]/10000000),
+        borderColor:'#D4A72C', backgroundColor:'rgba(212,167,44,.12)', fill:true, tension:.25,
+        pointRadius:5, pointHoverRadius:7, pointBackgroundColor:'#D4A72C', borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{
+        label:(c)=> '\u20B9'+c.parsed.y.toFixed(2)+' Cr — '+recs[c.dataIndex][TEAM]
+      } } },
+      scales:{
+        x:{ ticks:{ color:'#93A0BE' }, grid:{ display:false } },
+        y:{ ticks:{ color:'#93A0BE', callback:(v)=>'\u20B9'+v+'Cr' }, grid:{ color:'#2A3450' } }
+      }
+    }
+  });
+}
+
+const allPlayersLower = {};
+Object.keys(playerRecords).forEach(p=> allPlayersLower[p.toLowerCase()] = p);
+
+function handleSearch(q){
+  const container = document.getElementById('playerResult');
+  const query = q.trim();
+  if(!query){
+    container.innerHTML = `<div class="empty">Type a player name to see their auction price trajectory across seasons and franchises — a price crash usually tracks a lean season, a spike usually tracks a breakout.</div>`;
+    return;
+  }
+  const exact = searchablePlayers.find(p=>p.toLowerCase()===query.toLowerCase());
+  if(exact){ renderPlayerResult(exact); return; }
+
+  const singleName = allPlayersLower[query.toLowerCase()];
+  if(singleName){
+    const rec = playerRecords[singleName][0];
+    container.innerHTML = `<div class="empty">${singleName} appears only once in this auction dataset (${rec[TEAM]}, ${rec[YEAR]}) — not enough sales to plot a trajectory.</div>`;
+    return;
+  }
+
+  const partial = Object.keys(playerRecords).filter(p=>p.toLowerCase().includes(query.toLowerCase()));
+  if(partial.length){
+    container.innerHTML = `<div class="empty">No exact match. Did you mean: ${partial.slice(0,6).join(', ')}?</div>`;
+  } else {
+    container.innerHTML = `<div class="empty">"${query}" doesn't appear in this dataset. This ledger only covers players who went to auction — franchise retentions (players kept without going under the hammer, e.g. MS Dhoni or Ravindra Jadeja at CSK) aren't recorded in the source data, so long-tenured retained players may be missing entirely.</div>`;
+  }
+}
+document.getElementById('playerSearch').addEventListener('input', (e)=> handleSearch(e.target.value));
+
+/* ============================================================
+   05 — Biggest movers (season-to-season price swings)
+   ============================================================ */
+const priceMoves = [];
+Object.entries(playerRecords).forEach(([player, recs])=>{
+  for(let i=1;i<recs.length;i++){
+    const prev = recs[i-1], cur = recs[i];
+    priceMoves.push({
+      player, fromYear:prev[YEAR], toYear:cur[YEAR],
+      fromTeam:prev[TEAM], toTeam:cur[TEAM],
+      fromAmt:prev[AMOUNT], toAmt:cur[AMOUNT],
+      change: cur[AMOUNT]-prev[AMOUNT]
+    });
+  }
+});
+const topJumps = [...priceMoves].sort((a,b)=>b.change-a.change).slice(0,15);
+const topDrops = [...priceMoves].sort((a,b)=>a.change-b.change).slice(0,15);
+
+let moversMode = 'jumps';
+function renderMovers(){
+  const list = moversMode==='jumps' ? topJumps : topDrops;
+  const tbody = document.querySelector('#moversTable tbody');
+  tbody.innerHTML = list.map(m => `
+    <tr>
+      <td><span class="player-name">${m.player}</span><br><span class="move-team">${m.fromTeam} '${String(m.fromYear).slice(2)} \u2192 ${m.toTeam} '${String(m.toYear).slice(2)}</span></td>
+      <td>${m.change>=0 ? '<i class="ti ti-trending-up"></i> Jump' : '<i class="ti ti-trending-down"></i> Drop'}</td>
+      <td class="${m.change>=0?'change-up':'change-down'}" style="text-align:right;">${m.change>=0?'+':''}${fmtCrShort(m.change)}</td>
+      <td class="amt">${fmtCrShort(m.fromAmt)} \u2192 ${fmtCrShort(m.toAmt)}</td>
+    </tr>
+  `).join('');
+}
+document.getElementById('moversJumpsBtn').addEventListener('click', ()=>{
+  moversMode='jumps';
+  document.getElementById('moversJumpsBtn').classList.add('active');
+  document.getElementById('moversDropsBtn').classList.remove('active');
+  renderMovers();
+});
+document.getElementById('moversDropsBtn').addEventListener('click', ()=>{
+  moversMode='drops';
+  document.getElementById('moversDropsBtn').classList.add('active');
+  document.getElementById('moversJumpsBtn').classList.remove('active');
+  renderMovers();
+});
+renderMovers();
+
+/* ============================================================
+   06 — Team spending DNA (role-allocation radar, 2 teams)
+   ============================================================ */
+function computeRoleShare(team){
+  const totals = {}; roles.forEach(r=>totals[r]=0);
+  AUCTION_DATA.forEach(r=>{ if(r[TEAM]===team) totals[r[ROLE]] += r[AMOUNT]; });
+  const sum = roles.reduce((s,r)=>s+totals[r],0);
+  return roles.map(r=> sum ? +(100*totals[r]/sum).toFixed(1) : 0);
+}
+
+const dnaTeamA = document.getElementById('dnaTeamA');
+const dnaTeamB = document.getElementById('dnaTeamB');
+teams.forEach(t=>{
+  dnaTeamA.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
+  dnaTeamB.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
+});
+dnaTeamA.value = teams.includes('Chennai Super Kings') ? 'Chennai Super Kings' : teams[0];
+dnaTeamB.value = teams.includes('Delhi Capitals') ? 'Delhi Capitals' : teams[1];
+
+let dnaChart;
+function renderDNAChart(){
+  const teamA = dnaTeamA.value, teamB = dnaTeamB.value;
+  document.getElementById('dnaLegend').innerHTML = `
+    <span><span class="sw" style="background:#D4A72C"></span>${teamA}</span>
+    <span><span class="sw" style="background:#2BA88F"></span>${teamB}</span>
+  `;
+  if(dnaChart) dnaChart.destroy();
+  dnaChart = new Chart(document.getElementById('dnaChart'), {
+    type:'radar',
+    data:{
+      labels: roles,
+      datasets:[
+        { label:teamA, data: computeRoleShare(teamA), borderColor:'#D4A72C', backgroundColor:'rgba(212,167,44,.18)', pointBackgroundColor:'#D4A72C', borderWidth:2 },
+        { label:teamB, data: computeRoleShare(teamB), borderColor:'#2BA88F', backgroundColor:'rgba(43,168,143,.18)', pointBackgroundColor:'#2BA88F', borderWidth:2 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': '+c.parsed.r+'%' } } },
+      scales:{
+        r:{
+          min:0, max:100, ticks:{ color:'#93A0BE', backdropColor:'transparent', stepSize:20 },
+          grid:{ color:'#2A3450' }, angleLines:{ color:'#2A3450' },
+          pointLabels:{ color:'#F3EFE4', font:{size:11} }
+        }
+      }
+    }
+  });
+}
+[dnaTeamA, dnaTeamB].forEach(el=>el.addEventListener('change', renderDNAChart));
+renderDNAChart();
+
+/* ============================================================
+   07 — Spend-rank movement by season (heatmap grid)
+   ============================================================ */
+// Same franchise, just rebranded — merge so they read as one continuous row.
+const TEAM_LINEAGE = { 'Delhi Daredevils':'Delhi Capitals', 'Kings XI Punjab':'Punjab Kings' };
+const canonTeam = t => TEAM_LINEAGE[t] || t;
+const lineageTeams = [...new Set(teams.map(canonTeam))].sort();
+
+const seasonTeamSpend = {};
+years.forEach(y=>{ seasonTeamSpend[y] = {}; lineageTeams.forEach(t=>seasonTeamSpend[y][t]=0); });
+AUCTION_DATA.forEach(r=>{ seasonTeamSpend[r[YEAR]][canonTeam(r[TEAM])] += r[AMOUNT]; });
+
+const seasonTeamRank = {};
+years.forEach(y=>{
+  const entries = lineageTeams.map(t=>({t, v:seasonTeamSpend[y][t]})).filter(e=>e.v>0).sort((a,b)=>b.v-a.v);
+  seasonTeamRank[y] = {};
+  entries.forEach((e,i)=>{ seasonTeamRank[y][e.t] = i+1; });
+});
+
+function rankColor(rank, maxRank){
+  if(!rank) return 'transparent';
+  const t = (rank-1)/(maxRank-1);
+  const opacity = 0.85 - t*0.75;
+  return `rgba(212,167,44,${opacity.toFixed(2)})`;
+}
+
+function renderBumpGrid(){
+  const maxRank = lineageTeams.length;
+  const teamOrder = [...lineageTeams].sort((a,b)=>{
+    const totalA = years.reduce((s,y)=>s+seasonTeamSpend[y][a],0);
+    const totalB = years.reduce((s,y)=>s+seasonTeamSpend[y][b],0);
+    return totalB - totalA;
+  });
+  const theadHtml = `<tr><th>Franchise</th>${years.map(y=>`<th style="text-align:center;">${y}</th>`).join('')}</tr>`;
+  const rowsHtml = teamOrder.map(t=>{
+    const cells = years.map(y=>{
+      const rank = seasonTeamRank[y][t];
+      const spend = seasonTeamSpend[y][t];
+      if(!rank) return `<td class="rank-cell rank-empty" title="${t} did not buy in ${y}">\u2014</td>`;
+      return `<td class="rank-cell" style="background:${rankColor(rank,maxRank)}" title="${t} \u2014 rank ${rank} \u00b7 ${fmtCrShort(spend)}">${rank}</td>`;
+    }).join('');
+    return `<tr><td class="rank-team">${t}</td>${cells}</tr>`;
+  }).join('');
+  document.getElementById('bumpGrid').innerHTML = `<table class="rank-table"><thead>${theadHtml}</thead><tbody>${rowsHtml}</tbody></table>`;
+}
+renderBumpGrid();
+
+/* ============================================================
+   08 — Indian vs. overseas price inflation
+   ============================================================ */
+function renderOriginChart(){
+  const originTotals = {};
+  years.forEach(y=> originTotals[y] = { Indian:{sum:0,count:0}, Overseas:{sum:0,count:0} });
+  AUCTION_DATA.forEach(r=>{
+    const o = originTotals[r[YEAR]][r[ORIGIN]];
+    if(o){ o.sum += r[AMOUNT]; o.count++; }
+  });
+  const indianAvg = years.map(y=>{ const o=originTotals[y].Indian; return o.count ? o.sum/o.count/10000000 : null; });
+  const overseasAvg = years.map(y=>{ const o=originTotals[y].Overseas; return o.count ? o.sum/o.count/10000000 : null; });
+
+  document.getElementById('originLegend').innerHTML = `
+    <span><span class="sw" style="background:#378ADD"></span>Indian</span>
+    <span><span class="sw" style="background:#D85A30"></span>Overseas</span>
+  `;
+
+  new Chart(document.getElementById('originChart'), {
+    type:'line',
+    data:{ labels: years, datasets:[
+      { label:'Indian', data: indianAvg, borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,.08)', fill:true, tension:.3, pointRadius:3, borderWidth:2 },
+      { label:'Overseas', data: overseasAvg, borderColor:'#D85A30', backgroundColor:'rgba(216,90,48,.08)', fill:true, tension:.3, pointRadius:3, borderWidth:2 }
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': \u20B9'+c.parsed.y.toFixed(2)+' Cr' } } },
+      scales:{
+        x:{ ticks:{ color:'#93A0BE' }, grid:{ display:false } },
+        y:{ ticks:{ color:'#93A0BE', callback:(v)=>'\u20B9'+v+'Cr' }, grid:{ color:'#2A3450' } }
+      }
+    }
+  });
+}
+renderOriginChart();
+</script>
+</body>
+</html>
